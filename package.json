@@ -10,11 +10,12 @@
   },
   "devDependencies": {
     "@types/bezier-js": "^4.1.0",
+    "protobufjs": "^7.2.4",
+    "protobufjs-cli": "^1.1.1",
     "typescript": "^5.0.2",
     "vite": "^4.3.9"
   },
   "dependencies": {
-    "bezier-easing": "^2.1.0",
     "bezier-js": "^6.1.4"
   }
 }

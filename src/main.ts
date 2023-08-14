@@ -1,6 +1,6 @@
 import { Bezier } from "bezier-js";
 
-import { loadImage, is_out_range, cz } from "./utils";
+import { loadImage, is_out_range, interpolation } from "./utils";
 const CANVAS_ID = "#canvas";
 const IMG_URL = "/4.jpg";
 
@@ -9,7 +9,6 @@ console.time("time");
 const img = await loadImage(IMG_URL);
 const width = img.naturalWidth;
 const height = img.naturalHeight;
-const channels = 4;
 
 const cas = document.createElement("canvas");
 cas.width = width;
@@ -17,31 +16,31 @@ cas.height = height;
 const ctx = cas?.getContext("2d");
 ctx?.drawImage(img, 0, 0);
 const origin = ctx?.getImageData(0, 0, width, height)!;
-
+const channels = origin.data.length / (width * height);
 const target = new ImageData(width, height);
 
 const top_bezier = new Bezier([
     { x: 0, y: 0 },
-    { x: 200, y: 200 },
-    { x: 400, y: 200 },
+    { x: 0.33 * width, y: 100 },
+    { x: 0.67 * width, y: 100 },
     { x: width, y: 0 },
 ]);
 const bottom_bezier = new Bezier([
     { x: 0, y: height },
-    { x: 200, y: height - 100 },
-    { x: 400, y: height - 200 },
+    { x: 0.33 * width, y: height - 100 },
+    { x: 0.67 * width, y: height - 120 },
     { x: width, y: height },
 ]);
 const left_bezier = new Bezier([
     { x: 0, y: 0 },
-    { x: 100, y: 200 },
-    { x: 0, y: 400 },
+    { x: 200, y: 0.33 * height },
+    { x: 200, y: 0.67 * height },
     { x: 0, y: height },
 ]);
 const right_bezier = new Bezier([
     { x: width, y: 0 },
-    { x: width - 100, y: 200 },
-    { x: width, y: 400 },
+    { x: width - 100, y: 0.33 * height },
+    { x: width - 200, y: 0.67 * height },
     { x: width, y: height },
 ]);
 
@@ -70,34 +69,28 @@ for (let y = 0; y < height; ++y) {
         const left = left_arr[y];
         const right = right_arr[y];
 
-        let r = 0;
-        let g = 0;
-        let b = 0;
-        let a = 0;
+        const px = new Uint8Array(channels).fill(0);
 
         let x_rate = Math.abs(x - left) / Math.abs(right - left);
         let y_rate = Math.abs(y - top) / Math.abs(bottom - top);
 
         if (!is_out_range(x, y, left, right, top, bottom)) {
-            let origin_x = cz(x_rate, 0, width);
-            let origin_y = cz(y_rate, 0, height);
-            r = origin.data[origin_y * width * channels + origin_x * channels];
-            g = origin.data[origin_y * width * channels + origin_x * channels + 1];
-            b = origin.data[origin_y * width * channels + origin_x * channels + 2];
-            a = origin.data[origin_y * width * channels + origin_x * channels + 3];
+            let origin_x = interpolation(x_rate, 0, width);
+            let origin_y = interpolation(y_rate, 0, height);
+            for (let i = 0; i < channels; ++i) {
+                px[i] = origin.data[origin_y * width * channels + origin_x * channels + i];
+            }
         }
-
-        target.data[y * width * channels + x * channels] = r;
-        target.data[y * width * channels + x * channels + 1] = g;
-        target.data[y * width * channels + x * channels + 2] = b;
-        target.data[y * width * channels + x * channels + 3] = a;
+        for (let i = 0; i < channels; ++i) {
+            target.data[y * width * channels + x * channels + i] = px[i];
+        }
     }
 }
-console.log(target);
 console.timeEnd("time");
-// cv.imshow(CANVAS_ID, target);
 {
     const cas: HTMLCanvasElement = document.querySelector(CANVAS_ID)!;
+    cas.width = width;
+    cas.height = height;
     const ctx = cas?.getContext("2d");
     ctx?.putImageData(target, 0, 0);
 }
