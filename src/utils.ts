@@ -21,8 +21,10 @@ function is_out_range_by_box(x: number, y: number, box: BBox): boolean {
     return x < rang_x.min || x > rang_x.max || y < rang_y.min || y > rang_y.max;
 }
 
-function interpolation(rate: number, start: number, end: number): number {
-    return Math.round((1 - rate) * start + rate * end);
+function interpolation(rate: number, start: Point, end: Point): Point {
+    const x = Math.round((1 - rate) * start.x + rate * end.x);
+    const y = Math.round((1 - rate) * start.y + rate * end.y);
+    return { x, y };
 }
 
 function createBezier(points: Array<Point>) {

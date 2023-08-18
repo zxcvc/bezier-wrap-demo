@@ -17,6 +17,7 @@
         "vite": "^4.3.9"
     },
     "dependencies": {
-        "bezier-js": "^6.1.4"
+        "bezier-js": "^6.1.4",
+        "matrix-js": "^1.6.1"
     }
 }
