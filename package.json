@@ -11,13 +11,16 @@
     },
     "devDependencies": {
         "@types/bezier-js": "^4.1.0",
+        "@types/numjs": "^0.16.4",
         "protobufjs": "^7.2.4",
         "protobufjs-cli": "^1.1.1",
         "typescript": "^5.0.2",
-        "vite": "^4.3.9"
+        "vite": "^4.3.9",
+        "vite-plugin-glsl": "^1.1.2",
+        "vite-plugin-raw": "^1.0.3"
     },
     "dependencies": {
         "bezier-js": "^6.1.4",
-        "matrix-js": "^1.6.1"
+        "mathjs": "^11.9.1"
     }
 }

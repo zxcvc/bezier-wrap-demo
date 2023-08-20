@@ -1,6 +1,6 @@
 /* eslint-disable */
 import { Bezier, Point, Projection } from "bezier-js";
-import {} from "matrix-js";
+// import {} from "matrix-js";
 import { loadImage, is_out_range, interpolation, createBezier } from "./utils";
 
 async function fn(img_url: string, width: number, height: number, bezier_point: Array<Point>) {
@@ -27,36 +27,31 @@ async function fn(img_url: string, width: number, height: number, bezier_point: 
     for (let y = 0; y < height; ++y) {
         for (let x = 0; x < width; ++x) {
             const px = new Uint8Array([0, 0, 0, 255]);
+            const top_point = top_arr[x];
+            const bottom_point = bottom_arr[x];
+            const left_point = left_arr[y];
+            const right_point = right_arr[y];
 
-            const x_rate = x / width;
-            const y_rate = y / height;
-            const top_point = top_arr[Math.round(top_arr.length * x_rate)];
-            const bottom_point = bottom_arr[Math.round(bottom_arr.length * x_rate)];
-            const left_point = left_arr[Math.round(left_arr.length * y_rate)];
-            const right_point = right_arr[Math.round(right_arr.length * y_rate)];
+            const x_rate = (x - left_point.x) / (right_point.x - left_point.x);
+            const y_rate = (y - top_point.y) / (bottom_point.y - top_point.y);
+            let x_point = interpolation(x_rate, { x: 0, y: top_point.y }, { x: width, y: bottom_point.y });
+            let y_point = interpolation(y_rate, { x: left_point.x, y: 0 }, { x: right_point.x, y: height });
 
-            let x_point = interpolation(x_rate, left_point, right_point);
-            let y_point = interpolation(y_rate, top_point, bottom_point);
-            const x1 = x_point.x;
-            const x2 = x_point.y;
-            const y1 = y_point.x;
-            const y2 = y_point.y;
-
-            const revet_martix = [
-                [y2 / (x1 * y2 - x2 * y1), -x2 / (x1 * y2 - x2 * y1)],
-                [-y1 / (x1 * y2 - x2 * y1), x1 / (x1 * y2 - x2 * y1)],
-            ];
-
-            const _origin_x = x_point.x + y_point.x;
-            const _origin_y = x_point.y + y_point.y;
-            const origin_x = Math.round(revet_martix[0][0] * _origin_x + revet_martix[0][1] * _origin_y);
-            const origin_y = Math.round(revet_martix[1][0] * _origin_x + revet_martix[1][1] * _origin_y);
-
+            const origin_x = x_point.x;
+            const origin_y = y_point.y;
+            if (Number.isNaN(origin_y)) {
+                // debugger;
+            }
+            // console.log(origin_x, origin_y);
             if (
-                !is_out_range(origin_x, origin_y, {
-                    x: { min: 0, max: width },
-                    y: { min: 0, max: height },
-                })
+                !is_out_range(
+                    x,
+                    y,
+                    Math.max(left_point.x, 0),
+                    Math.min(right_point.x, width),
+                    Math.max(top_point.y, 0),
+                    Math.min(bottom_point.y, height)
+                )
             ) {
                 for (let i = 0; i < channels; ++i) {
                     px[i] = origin_imgdata.data[origin_y * width * channels + origin_x * channels + i];
