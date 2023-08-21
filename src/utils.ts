@@ -25,7 +25,7 @@ function interpolation(rate: number, start: Point, end: Point): Point {
     return { x, y };
 }
 
-function createBezier(points: Array<Point>) {
+function pointHandler(points: Array<Point>): Array<Array<Point>> {
     const res = [];
     const length = points.length;
     let i = 0;
@@ -41,10 +41,15 @@ function createBezier(points: Array<Point>) {
         if (i >= 2) {
             arr.reverse();
         }
-        res.push(new Bezier(arr));
+        res.push(arr);
         ++i;
     }
     return res;
 }
 
-export { loadImage, is_out_range, interpolation, createBezier };
+function createBezier(points: Array<Point>) {
+    const p = pointHandler(points);
+    return p.map((item) => new Bezier(item));
+}
+
+export { loadImage, is_out_range, interpolation, createBezier, pointHandler };

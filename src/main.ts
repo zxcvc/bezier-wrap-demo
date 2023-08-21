@@ -32,37 +32,30 @@ async function fn(img_url: string, width: number, height: number, bezier_point: 
             const left_point = left_arr[y];
             const right_point = right_arr[y];
 
-            const x_rate = (x - left_point.x) / (right_point.x - left_point.x);
-            const y_rate = (y - top_point.y) / (bottom_point.y - top_point.y);
-            let x_point = interpolation(x_rate, { x: 0, y: top_point.y }, { x: width, y: bottom_point.y });
-            let y_point = interpolation(y_rate, { x: left_point.x, y: 0 }, { x: right_point.x, y: height });
-
-            const origin_x = x_point.x;
-            const origin_y = y_point.y;
-            if (Number.isNaN(origin_y)) {
-                // debugger;
-            }
-            // console.log(origin_x, origin_y);
-            if (
-                !is_out_range(
-                    x,
-                    y,
-                    Math.max(left_point.x, 0),
-                    Math.min(right_point.x, width),
-                    Math.max(top_point.y, 0),
-                    Math.min(bottom_point.y, height)
-                )
-            ) {
+            const target1 = { x: Math.round(left_point.x + top_point.x), y: Math.round(left_point.y + top_point.y) };
+            const target2 = {
+                x: Math.round(right_point.x + bottom_point.x),
+                y: Math.round(right_point.y + bottom_point.y),
+            };
+            const target = interpolation(x / width, target1, target2);
+            const target_x = interpolation(x / width, left_point, right_point);
+            const target_y = interpolation(y / height, top_point, bottom_point);
+            // const target = { x: target_x.x + target_y.x, y: target_x.y + target_y.y };
+            // console.log(target.x, target.y);
+            if (!is_out_range(target.x, target.y, left_point.x, right_point.x, top_point.y, bottom_point.y)) {
                 for (let i = 0; i < channels; ++i) {
-                    px[i] = origin_imgdata.data[origin_y * width * channels + origin_x * channels + i];
+                    px[i] = origin_imgdata.data[y * width * channels + x * channels + i];
                 }
             }
 
+            // console.log(px);
             for (let i = 0; i < channels; ++i) {
-                target_imagedata.data[y * width * channels + x * channels + i] = px[i];
+                target_imagedata.data[target.y * width * channels + target.x * channels + i] = px[i];
             }
+            // console.log(target.y * width * channels + target.x);
         }
     }
+    console.log(target_imagedata);
 
     ctx?.clearRect(0, 0, width, height);
     ctx?.putImageData(target_imagedata, 0, 0);

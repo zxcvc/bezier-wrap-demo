@@ -4,5 +4,6 @@ varying vec2 v_texture_coords;
 
 void main(){
     v_texture_coords = a_texture_coords;
+    gl_PointSize = 1.0;
     gl_Position = vec4(a_vertex_coords,0,1);
 }

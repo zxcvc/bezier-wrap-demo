@@ -12,6 +12,7 @@
     "devDependencies": {
         "@types/bezier-js": "^4.1.0",
         "@types/numjs": "^0.16.4",
+        "@types/three": "^0.155.0",
         "protobufjs": "^7.2.4",
         "protobufjs-cli": "^1.1.1",
         "typescript": "^5.0.2",
@@ -21,6 +22,7 @@
     },
     "dependencies": {
         "bezier-js": "^6.1.4",
-        "mathjs": "^11.9.1"
+        "mathjs": "^11.9.1",
+        "three": "^0.155.0"
     }
 }
