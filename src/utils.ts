@@ -39,7 +39,7 @@ function pointHandler(points: Array<Point>): Array<Array<Point>> {
             ++j;
         }
         if (i >= 2) {
-            arr.reverse();
+            // arr.reverse();
         }
         res.push(arr);
         ++i;
@@ -52,4 +52,15 @@ function createBezier(points: Array<Point>) {
     return p.map((item) => new Bezier(item));
 }
 
-export { loadImage, is_out_range, interpolation, createBezier, pointHandler };
+async function LoadImageBySize(url: string, width: number, height: number): Promise<string> {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    const img = await loadImage(url);
+    console.log(url);
+    ctx?.drawImage(img, 0, 0, width, height);
+    return canvas.toDataURL();
+}
+
+export { loadImage, is_out_range, interpolation, createBezier, pointHandler, LoadImageBySize };
