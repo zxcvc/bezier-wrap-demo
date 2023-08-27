@@ -1,6 +1,6 @@
 import { Bezier, utils } from "bezier-js";
 import type { BBox, Point } from "bezier-js";
-
+const ERROR_MARGIN = 0.001;
 function loadImage(url: string): Promise<HTMLImageElement> {
     const img = new Image();
     return new Promise((res) => {
@@ -13,6 +13,25 @@ function is_out_range(x: number, y: number, start_x: number, end_x: number, star
     return x < start_x || x > end_x || y < start_y || y > end_y;
 }
 
+function is_out_by_points(x: number, y: number, width: number, height: number, points: Array<Point>): boolean {
+    let left = Number.MAX_SAFE_INTEGER;
+    let right = Number.MIN_SAFE_INTEGER;
+    let top = Number.MAX_SAFE_INTEGER;
+    let bottom = Number.MIN_SAFE_INTEGER;
+    points.forEach((point) => {
+        left = Math.min(left, point.x);
+        right = Math.max(right, point.x);
+        top = Math.min(top, point.y);
+        bottom = Math.max(bottom, point.y);
+    });
+    left = Math.max(0, left);
+    right = Math.min(width, right);
+    top = Math.max(0, top);
+    bottom = Math.min(height, bottom);
+    // console.log(left, right, top, bottom);
+    return x < left || x > right || y < top || y > bottom;
+}
+
 function is_out_range_by_box(x: number, y: number, box: BBox): boolean {
     const rang_x = box.x;
     const rang_y = box.y;
@@ -23,6 +42,9 @@ function interpolation(rate: number, start: Point, end: Point): Point {
     const x = Math.round((1 - rate) * start.x + rate * end.x);
     const y = Math.round((1 - rate) * start.y + rate * end.y);
     return { x, y };
+}
+function interpolation_number(rate: number, start: number, end: number): number {
+    return (1 - rate) * start + rate * end;
 }
 
 function pointHandler(points: Array<Point>): Array<Array<Point>> {
@@ -39,7 +61,7 @@ function pointHandler(points: Array<Point>): Array<Array<Point>> {
             ++j;
         }
         if (i >= 2) {
-            // arr.reverse();
+            arr.reverse();
         }
         res.push(arr);
         ++i;
@@ -63,4 +85,62 @@ async function LoadImageBySize(url: string, width: number, height: number): Prom
     return canvas.toDataURL();
 }
 
-export { loadImage, is_out_range, interpolation, createBezier, pointHandler, LoadImageBySize };
+function binary_search(
+    generator: (...ary: any) => number,
+    target: number,
+    left: number,
+    right: number,
+    margin_error: number
+) {
+    while (left <= right) {
+        let mid = (left + right) / 2;
+        const ans = generator(mid);
+        if (Math.abs(ans - target) <= margin_error) {
+            return mid;
+        } else if (ans < target) {
+            left = mid;
+        } else {
+            right = mid;
+        }
+    }
+    return left;
+}
+
+function length(bezier: Bezier, t: number) {
+    const d = bezier.derivative(t);
+    return Math.sqrt(d.x ** 2 + d.y ** 2);
+}
+
+function gs_length(bezier: Bezier, t: number) {
+    return (
+        (t / 2) *
+        (length(bezier, ((t / 2) * -1) / Math.sqrt(3) + t / 2) + length(bezier, ((t / 2) * 1) / Math.sqrt(3) + t / 2))
+    );
+}
+
+function getLUTByLen(bezier: Bezier, n: number): Array<Point> {
+    const ans = new Array(n);
+    const length = gs_length(bezier, 1);
+    const setp_length = length / n;
+    const generator = gs_length.bind(null, bezier);
+    for (let i = 0; i < n; ++i) {
+        const len = i * setp_length;
+        const t = binary_search(generator, len, 0, 1, ERROR_MARGIN);
+        ans[i] = bezier.compute(t);
+    }
+    return ans;
+}
+
+export {
+    loadImage,
+    is_out_range,
+    interpolation,
+    createBezier,
+    pointHandler,
+    LoadImageBySize,
+    binary_search,
+    gs_length,
+    getLUTByLen,
+    is_out_by_points,
+    interpolation_number,
+};

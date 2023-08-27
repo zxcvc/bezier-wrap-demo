@@ -10,10 +10,11 @@ renderer.setSize(width, height);
 document.body.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-const camera = new THREE.OrthographicCamera(0, width, 0, -height, 0.1, 100000);
-camera.position.set(0, 0, 10);
-camera.up.set(0, 1, 0);
-// camera.lookAt(0, 0, 0);
+const camera = new THREE.OrthographicCamera(-0.5, 0.5, 0.5, -0.5);
+camera.position.set(0, 0, 2);
+const helper = new THREE.CameraHelper(camera);
+helper.update();
+scene.add(helper);
 
 const pint = [
     { x: 446.0, y: -47.0 },
@@ -29,8 +30,28 @@ const pint = [
     { x: 150.5, y: 603.4 },
     { x: 300.5, y: 274.0 },
 ];
-const points = pointHandler(pint);
+const [top, right, bottom, left] = pointHandler(pint);
+const origin_x = width / 2;
+const origin_y = height / 2;
+const top_bezier = new THREE.CubicBezierCurve(
+    ...top.map((item) => new THREE.Vector2((item.x - origin_x) / width, (item.y - origin_y) / -height))
+);
+const right_bezier = new THREE.CubicBezierCurve(
+    ...right.map((item) => new THREE.Vector2((item.x - origin_x) / width, (item.y - origin_y) / -height))
+);
+const bottom_bezier = new THREE.CubicBezierCurve(
+    ...bottom.map((item) => new THREE.Vector2((item.x - origin_x) / width, (item.y - origin_y) / -height))
+);
+const left_bezier = new THREE.CubicBezierCurve(
+    ...left.map((item) => new THREE.Vector2((item.x - origin_x) / width, (item.y - origin_y) / -height))
+);
 
+const top_points = top_bezier.getPoints(width);
+const right_points = right_bezier.getPoints(height);
+const bottom_points = bottom_bezier.getPoints(width);
+const left_points = left_bezier.getPoints(height);
+const vertix = [...top_points, ...right_points, ...bottom_points.reverse(), ...left_points.reverse()];
+const texture_top_points = top_points.flatMap((item) => [item.x, item.y]);
 let shape = new THREE.Shape();
 // points.forEach((item) => {
 //     shape = shape
@@ -38,18 +59,22 @@ let shape = new THREE.Shape();
 //         .bezierCurveTo(item[1].x, -item[1].y, item[2].x, -item[2].y, item[3].x, -item[3].y);
 // });
 
-shape.moveTo(-100, 100).lineTo(100, 100).lineTo(100, -100).lineTo(-100, -100).closePath();
 const img = await LoadImageBySize(img_url, width, height);
-console.log(img);
 const texture = new THREE.TextureLoader().load(img, (texture) => {
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
     texture.minFilter = THREE.LinearFilter;
-
-    const geometry = new THREE.ExtrudeGeometry(shape);
-    const material = new THREE.MeshBasicMaterial({ map: texture });
+    const geometry = new THREE.BufferGeometry();
+    geometry.face;
+    const material = new THREE.MeshBasicMaterial({ map: texture, wireframe: true });
     const mesh = new Mesh(geometry, material);
+    mesh.geometry.setFromPoints(vertix);
+    const vertex = geometry.attributes.position.array;
+    console.log(vertex);
+    const uv = geometry.attributes.uv;
+    console.log(uv);
+    mesh.geometry.attributes.position.needsUpdate = true;
     scene.add(mesh);
     renderer.render(scene, camera);
     console.timeEnd("1");

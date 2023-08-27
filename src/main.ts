@@ -1,13 +1,30 @@
 /* eslint-disable */
 import { Bezier, Point, Projection } from "bezier-js";
 // import {} from "matrix-js";
-import { loadImage, is_out_range, interpolation, createBezier } from "./utils";
+import {
+    loadImage,
+    is_out_range,
+    interpolation,
+    createBezier,
+    gs_length,
+    getLUTByLen,
+    is_out_by_points,
+    interpolation_number,
+} from "./utils.ts";
 
 async function fn(img_url: string, width: number, height: number, bezier_point: Array<Point>) {
     const [top_bezier, right_bezier, bottom_bezier, left_bezier] = createBezier(bezier_point);
-    for (let i = 0; i < 1; i += 0.01) {
-        // console.log(top_bezier.compute(i));
-    }
+    // const top_length = Math.floor(gs_length(top_bezier, 1));
+    // const right_length = Math.floor(gs_length(right_bezier, 1));
+    // const bottom_length = Math.floor(gs_length(bottom_bezier, 1));
+    // const left_length = Math.floor(gs_length(left_bezier, 1));
+
+    const top_points = getLUTByLen(top_bezier, width);
+    const right_points = getLUTByLen(right_bezier, height);
+    const bottom_points = getLUTByLen(bottom_bezier, width);
+    const left_points = getLUTByLen(left_bezier, height);
+    console.log(top_points, right_points, bottom_points, left_points);
+
     const img = await loadImage(img_url);
     const canvas = document.createElement("canvas");
     canvas.width = width;
@@ -19,46 +36,34 @@ async function fn(img_url: string, width: number, height: number, bezier_point: 
     const channels = origin_imgdata.data.length / (width * height);
     const target_imagedata = new ImageData(width, height);
 
-    const top_arr: Array<Point> = top_bezier.getLUT(width);
-    const bottom_arr: Array<Point> = bottom_bezier.getLUT(width);
-    const left_arr: Array<Point> = left_bezier.getLUT(height);
-    const right_arr: Array<Point> = right_bezier.getLUT(height);
-
     for (let y = 0; y < height; ++y) {
         for (let x = 0; x < width; ++x) {
             const px = new Uint8Array([0, 0, 0, 255]);
-            const top_point = top_arr[x];
-            const bottom_point = bottom_arr[x];
-            const left_point = left_arr[y];
-            const right_point = right_arr[y];
+            const top_point = top_points[x];
+            const bottom_point = bottom_points[x];
+            const left_point = left_points[y];
+            const right_point = right_points[y];
 
-            const target1 = { x: Math.round(left_point.x + top_point.x), y: Math.round(left_point.y + top_point.y) };
-            const target2 = {
-                x: Math.round(right_point.x + bottom_point.x),
-                y: Math.round(right_point.y + bottom_point.y),
-            };
-            const target = interpolation(x / width, target1, target2);
-            const target_x = interpolation(x / width, left_point, right_point);
-            const target_y = interpolation(y / height, top_point, bottom_point);
-            // const target = { x: target_x.x + target_y.x, y: target_x.y + target_y.y };
-            // console.log(target.x, target.y);
-            if (!is_out_range(target.x, target.y, left_point.x, right_point.x, top_point.y, bottom_point.y)) {
+            const x_rate = (x - left_point.x) / (right_point.x - left_point.x);
+            const y_rate = (y - top_point.y) / (bottom_point.y - top_point.y);
+            const origin_x = Math.round(interpolation_number(x_rate, 0, width));
+            const origin_y = Math.round(interpolation_number(y_rate, 0, height));
+
+            if (!is_out_by_points(x, y, width, height, [top_point, bottom_point, left_point, right_point])) {
                 for (let i = 0; i < channels; ++i) {
-                    px[i] = origin_imgdata.data[y * width * channels + x * channels + i];
+                    px[i] = origin_imgdata.data[origin_y * width * channels + origin_x * channels + i];
                 }
             }
 
-            // console.log(px);
             for (let i = 0; i < channels; ++i) {
-                target_imagedata.data[target.y * width * channels + target.x * channels + i] = px[i];
+                target_imagedata.data[y * width * channels + x * channels + i] = px[i];
             }
-            // console.log(target.y * width * channels + target.x);
         }
     }
-    console.log(target_imagedata);
 
-    ctx?.clearRect(0, 0, width, height);
+    console.log(target_imagedata);
     ctx?.putImageData(target_imagedata, 0, 0);
+
     return canvas.toDataURL();
 }
 
@@ -80,7 +85,8 @@ const pint = [
 ];
 
 const url = await fn("/6.webp", 1048, 1200, pint);
-const canvas: HTMLCanvasElement = document.querySelector("#canvas")!;
+const canvas: HTMLCanvasElement = document.createElement("canvas");
+document.body.append(canvas);
 const ctx = canvas.getContext("2d");
 const img = await loadImage(url);
 canvas.width = img.width;

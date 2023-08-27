@@ -1,5 +1,6 @@
 const width = 1048;
 const height = 1200;
+const ERROR_MARGIN = 0.001;
 import v_shader_string from "./shader/v.glsl";
 import f_shader_string from "./shader/f.glsl";
 
@@ -18,8 +19,8 @@ const bezier_points = [
     { x: 300.5, y: 274.0 },
 ];
 
-import { createBezier, loadImage } from "./utils";
-import { Point } from "bezier-js";
+import { createBezier, loadImage, binary_search, interpolation, gs_length } from "./utils.ts";
+import { Bezier, Point } from "bezier-js";
 let img_url = "/6.webp";
 
 async function fn(width: number, height: number, imgurl: string, bezier_points: Array<Point>) {
@@ -44,86 +45,104 @@ async function fn(width: number, height: number, imgurl: string, bezier_points: 
     let img_el = await loadImage(imgurl);
 
     const [top_bezier, right_bezier, bottom_bezier, left_bezier] = createBezier(bezier_points);
-    const _top_points = top_bezier.getLUT(width).map((item, index) => {
+    const top_length = Math.floor(gs_length(top_bezier, 1));
+    const right_length = Math.floor(gs_length(right_bezier, 1));
+    const bottom_length = Math.floor(gs_length(bottom_bezier, 1));
+    const left_length = Math.floor(gs_length(left_bezier, 1));
+    console.log(top_length, right_length, bottom_length, left_length);
+    console.time("length");
+    for (let i = 0; i < 10000; ++i) {
+        top_bezier.length();
+    }
+    console.timeEnd("length");
+    console.time("gs_length");
+    for (let i = 0; i < 10000; ++i) {
+        const length = gs_length(top_bezier, 1);
+        const t = binary_search(gs_length.bind(null, top_bezier), length, 0, 1, ERROR_MARGIN);
+    }
+    console.timeEnd("gs_length");
+    // return;
+
+    console.log(top_bezier.length(), gs_length(top_bezier, 1));
+    console.log(binary_search(gs_length.bind(null, top_bezier), 500, 0, 1, ERROR_MARGIN));
+
+    const _top_points = top_bezier.getLUT(top_length - 1).map((item, index) => {
+        const t = binary_search(gs_length.bind(null, top_bezier), index, 0, 1, ERROR_MARGIN);
+
+        item = top_bezier.compute(t);
         return [((item.x - width / 2) / width) * 2, ((item.y - height / 2) / height) * -2];
     });
-    const _right_points = right_bezier.getLUT(height).map((item, index) => {
+    const _right_points = right_bezier.getLUT(right_length - 1).map((item, index) => {
+        const t = binary_search(gs_length.bind(null, right_bezier), index, 0, 1, ERROR_MARGIN);
+        item = right_bezier.compute(t);
         return [((item.x - width / 2) / width) * 2, ((item.y - height / 2) / height) * -2];
     });
-    const _bottom_points = bottom_bezier.getLUT(width).map((item, index) => {
+    const _bottom_points = bottom_bezier.getLUT(bottom_length - 1).map((item, index) => {
+        const t = binary_search(gs_length.bind(null, bottom_bezier), index, 0, 1, ERROR_MARGIN);
+        item = bottom_bezier.compute(t);
         return [((item.x - width / 2) / width) * 2, ((item.y - height / 2) / height) * -2];
     });
-    const _left_points = left_bezier.getLUT(height).map((item, index) => {
+    const _left_points = left_bezier.getLUT(left_length - 1).map((item, index) => {
+        const t = binary_search(gs_length.bind(null, left_bezier), index, 0, 1, ERROR_MARGIN);
+        item = left_bezier.compute(t);
         return [((item.x - width / 2) / width) * 2, ((item.y - height / 2) / height) * -2];
     });
-    // top_points.pop();
-    // top_points.pop();
+
+    _right_points.reverse();
+    _top_points.reverse();
+    _top_points.pop();
+    _right_points.pop();
+    _bottom_points.pop();
+    _left_points.pop();
     const top_points = _top_points.flat(1);
     const right_points = _right_points.flat(1);
-    right_points.shift();
-    right_points.shift();
-
-    _bottom_points.reverse();
     const bottom_points = _bottom_points.flat(1);
-    bottom_points.shift();
-    bottom_points.shift();
-
-    _left_points.reverse();
     const left_points = _left_points.flat(1);
 
-    left_points.pop();
-    left_points.pop();
-    left_points.shift();
-    left_points.shift();
+    const top_arr = new Array(top_length).fill(0);
+    const right_arr = new Array(right_length).fill(0);
+    const bottom_arr = new Array(bottom_length).fill(0);
+    const left_arr = new Array(left_length).fill(0);
 
-    const width_arr = new Array(width + 1).fill(0);
-    const height_arr = new Array(height + 1).fill(0);
-
-    const _top_img_points = width_arr.map((item, index) => [(index - 0) / width, 1]);
-    const _right_img_points = height_arr.map((item, index) => [1, (height - index) / height]);
-    const _bottom_img_points = width_arr.map((item, index) => [(index - 0) / width, 0]);
-    const _left_img_points = height_arr.map((item, index) => [0, (height - index) / height]);
-    // console.log(top_points, top_img_points);
-
+    const _top_img_points = top_arr.map((item, index) => [(index - 0) / (top_length - 1), 1]);
+    const _right_img_points = right_arr.map((item, index) => [1, (right_length - 1 - index) / (right_length - 1)]);
+    const _bottom_img_points = bottom_arr.map((item, index) => [(index - 0) / (bottom_length - 1), 0]);
+    const _left_img_points = left_arr.map((item, index) => [0, (left_length - 1 - index) / (left_length - 1)]);
+    _top_img_points.pop();
+    _right_img_points.pop();
+    _bottom_img_points.pop();
+    _left_img_points.pop();
+    _top_img_points.reverse();
+    _right_img_points.reverse();
     const top_img_points = _top_img_points.flat(1);
-
     const right_img_points = _right_img_points.flat(1);
-    right_img_points.shift();
-    right_img_points.shift();
-
-    _bottom_img_points.reverse();
     const bottom_img_points = _bottom_img_points.flat(1);
-    bottom_img_points.shift();
-    bottom_img_points.shift();
-
-    _left_img_points.reverse();
     const left_img_points = _left_img_points.flat(1);
 
-    left_img_points.shift();
-    left_img_points.shift();
-    left_img_points.pop();
-    left_img_points.pop();
-    console.log(top_img_points, right_img_points);
-
-    const v_points = new Float32Array([...top_points, ...right_points, ...bottom_points, ...left_points]);
+    const top_mid = _top_points[top_length >> 1];
+    const bottom_mid = _bottom_points[bottom_length >> 1];
+    const left_mid = _left_points[left_length >> 1];
+    const right_mid = _right_points[right_length >> 1];
+    const { y } = interpolation(0.5, { x: top_mid[0], y: top_mid[1] }, { x: bottom_mid[0], y: bottom_mid[1] });
+    const { x } = interpolation(0.5, { x: left_mid[0], y: left_mid[1] }, { x: right_mid[0], y: right_mid[1] });
+    const v_points = new Float32Array([...left_points, ...bottom_points, ...right_points, ...top_points]);
     const f_points = new Float32Array([
-        ...top_img_points,
-        ...right_img_points,
-        ...bottom_img_points,
         ...left_img_points,
+        ...bottom_img_points,
+        ...right_img_points,
+        ...top_img_points,
     ]);
+    console.log(v_points, f_points);
     const canvas2d_el = document.createElement("canvas");
     canvas2d_el.width = width;
     canvas2d_el.height = height;
     const ctx = canvas2d_el.getContext("2d");
     ctx?.drawImage(img_el, 0, 0, width, height);
-    // img_url = canvas2d_el.toDataURL();
-    // img_el = await loadImage(img_url);
-    // document.querySelector("img").src = img_url;
-    const canvas: HTMLCanvasElement = document.createElement("canvas")!;
 
+    const canvas: HTMLCanvasElement = document.createElement("canvas")!;
     canvas.width = width;
     canvas.height = height;
+    document.body.append(canvas);
     const gl = canvas.getContext("webgl")!;
     const v_shader = gl?.createShader(gl.VERTEX_SHADER)!;
     const f_shader = gl?.createShader(gl.FRAGMENT_SHADER)!;
