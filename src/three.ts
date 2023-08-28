@@ -31,17 +31,18 @@ async function fn(
             texture.colorSpace = THREE.SRGBColorSpace;
             // texture.wrapS = THREE.RepeatWrapping;
             // texture.wrapT = THREE.RepeatWrapping;
-            // texture.magFilter = THREE.LinearFilter;
-            // texture.minFilter = THREE.LinearMipMapNearestFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.minFilter = THREE.LinearMipMapNearestFilter;
 
-            const geometry = new THREE.ShapeGeometry(shape, 100);
+            const geometry = new THREE.ShapeGeometry(shape, 20);
             const position = geometry.attributes.position.array;
             const material = new THREE.MeshBasicMaterial({ map: texture, wireframe: false });
             let uv = new Float32Array(position.length);
             const length_peer_b = position.length / 4;
+            console.log(length_peer_b);
             for (let s = 0; s < 4; ++s) {
                 let start = s * length_peer_b;
-                for (let i = 0; i + 2 < length_peer_b; i += 3) {
+                for (let i = 0; i + 2 < length_peer_b + 3; i += 3) {
                     let x, y, z;
                     switch (s) {
                         case 0: {
@@ -51,6 +52,7 @@ async function fn(
                             uv[i + start] = x;
                             uv[i + start + 1] = y;
                             uv[i + start + 2] = z;
+                            console.log(x);
                             break;
                         }
                         case 1: {
@@ -91,28 +93,28 @@ async function fn(
         });
     });
 }
-// console.time("1");
-// const width = 1048;
-// const height = 1200;
-// const img_url = "/6.webp";
-// const bezier_points = [
-//     { x: 446.0, y: -47.0 },
-//     { x: 674.3, y: 60.0 },
-//     { x: 880.6, y: 157.0 },
-//     { x: 1060.5, y: 239.5 },
-//     { x: 925.1, y: 540.3 },
-//     { x: 797.5, y: 825.4 },
-//     { x: 625.0, y: 1209.0 },
-//     { x: 427.1, y: 1098.0 },
-//     { x: 231.3, y: 1004.0 },
-//     { x: -3.0, y: 931.0 },
-//     { x: 150.5, y: 603.4 },
-//     { x: 300.5, y: 274.0 },
-// ];
-// const url = await fn(width, height, img_url, bezier_points);
-// const img = document.createElement("img");
-// img.src = url;
-// document.body.append(img);
-// console.timeEnd("1");
+console.time("1");
+const width = 1048;
+const height = 1200;
+const img_url = "/6.webp";
+const bezier_points = [
+    { x: 446.0, y: -47.0 },
+    { x: 674.3, y: 60.0 },
+    { x: 880.6, y: 157.0 },
+    { x: 1060.5, y: 239.5 },
+    { x: 925.1, y: 540.3 },
+    { x: 797.5, y: 825.4 },
+    { x: 625.0, y: 1209.0 },
+    { x: 427.1, y: 1098.0 },
+    { x: 231.3, y: 1004.0 },
+    { x: -3.0, y: 931.0 },
+    { x: 150.5, y: 603.4 },
+    { x: 300.5, y: 274.0 },
+];
+const url = await fn(width, height, img_url, bezier_points);
+const img = document.createElement("img");
+img.src = url;
+document.body.append(img);
+console.timeEnd("1");
 
 export default fn;
