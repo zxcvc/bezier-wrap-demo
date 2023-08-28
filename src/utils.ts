@@ -1,4 +1,4 @@
-import { Bezier, utils } from "bezier-js";
+import { Bezier } from "bezier-js";
 import type { BBox, Point } from "bezier-js";
 const ERROR_MARGIN = 0.001;
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -61,7 +61,7 @@ function pointHandler(points: Array<Point>): Array<Array<Point>> {
             ++j;
         }
         if (i >= 2) {
-            arr.reverse();
+            // arr.reverse();
         }
         res.push(arr);
         ++i;
@@ -111,6 +111,10 @@ function length(bezier: Bezier, t: number) {
     return Math.sqrt(d.x ** 2 + d.y ** 2);
 }
 
+function length_points(p1: Point, p2: Point): number {
+    return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+}
+
 function gs_length(bezier: Bezier, t: number) {
     return (
         (t / 2) *
@@ -134,6 +138,7 @@ function getLUTByLen(bezier: Bezier, n: number): Array<Point> {
 export {
     loadImage,
     is_out_range,
+    is_out_range_by_box,
     interpolation,
     createBezier,
     pointHandler,
@@ -143,4 +148,5 @@ export {
     getLUTByLen,
     is_out_by_points,
     interpolation_number,
+    length_points,
 };
