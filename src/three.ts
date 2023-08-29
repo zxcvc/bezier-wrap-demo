@@ -3,16 +3,11 @@ import { Mesh, type WebGLRenderer } from "three";
 import type { Point } from "bezier-js";
 import { pointHandler } from "./utils";
 
-const my_renderer = new THREE.WebGLRenderer();
+// const my_renderer = new THREE.WebGLRenderer();
 
-async function fn(
-    width: number,
-    height: number,
-    img_url: string,
-    bezier_points: Array<Point>,
-    renderer: WebGLRenderer = my_renderer
-): Promise<string> {
-    // renderer.clear();
+async function fn(width: number, height: number, img_url: string, bezier_points: Array<Point>): Promise<string> {
+    const renderer = new THREE.WebGLRenderer();
+    renderer.clear();
     renderer.setSize(width, height);
 
     const scene = new THREE.Scene();
@@ -34,16 +29,17 @@ async function fn(
             texture.magFilter = THREE.LinearFilter;
             texture.minFilter = THREE.LinearMipMapNearestFilter;
 
-            const geometry = new THREE.ShapeGeometry(shape, 20);
+            const geometry = new THREE.ShapeGeometry(shape, 7);
             const position = geometry.attributes.position.array;
             const material = new THREE.MeshBasicMaterial({ map: texture, wireframe: false });
             let uv = new Float32Array(position.length);
             const length_peer_b = position.length / 4;
-            console.log(length_peer_b);
+            console.log(position);
             for (let s = 0; s < 4; ++s) {
                 let start = s * length_peer_b;
-                for (let i = 0; i + 2 < length_peer_b + 3; i += 3) {
+                for (let i = 0; i + 2 < length_peer_b; i += 3) {
                     let x, y, z;
+
                     switch (s) {
                         case 0: {
                             x = i / length_peer_b;
@@ -52,7 +48,6 @@ async function fn(
                             uv[i + start] = x;
                             uv[i + start + 1] = y;
                             uv[i + start + 2] = z;
-                            console.log(x);
                             break;
                         }
                         case 1: {
@@ -83,6 +78,7 @@ async function fn(
                             break;
                         }
                     }
+                    console.log(x, y);
                 }
             }
             geometry.setAttribute("uv", new THREE.BufferAttribute(uv, 3));
@@ -111,7 +107,36 @@ const bezier_points = [
     { x: 150.5, y: 603.4 },
     { x: 300.5, y: 274.0 },
 ];
-const url = await fn(width, height, img_url, bezier_points);
+const b1 = [
+    { x: 269.0, y: -1.3 },
+    { x: 206.7, y: 1.3 },
+    { x: 141.8, y: 14.3 },
+    { x: 90.8, y: 45.3 },
+    { x: 107.0, y: 318.0 },
+    { x: 115.0, y: 584.9 },
+    { x: -6.5, y: 893.5 },
+    { x: 21.8, y: 930.5 },
+    { x: 74.2, y: 949.0 },
+    { x: 122.5, y: 955.5 },
+    { x: 347.0, y: 647.9 },
+    { x: 289.5, y: 304.5 },
+];
+const b2 = [
+    { x: 16.3, y: 0.3 },
+    { x: 79.6, y: 0.5 },
+    { x: 145.6, y: 18.0 },
+    { x: 196.8, y: 42.0 },
+    { x: 172.5, y: 321.8 },
+    { x: 186.0, y: 583.6 },
+    { x: 294.0, y: 886.5 },
+    { x: 266.1, y: 925.0 },
+    { x: 213.3, y: 944.5 },
+    { x: 149.0, y: 943.5 },
+    { x: -45.0, y: 641.6 },
+    { x: -6.0, y: 309.3 },
+];
+// const url = await fn(width, height, img_url, bezier_points);
+const url = await fn(283, 943, "/7.jpg", b1);
 const img = document.createElement("img");
 img.src = url;
 document.body.append(img);
