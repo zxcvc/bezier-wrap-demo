@@ -1,19 +1,16 @@
 import { Bezier } from "bezier-js";
-import type { BBox, Point } from "bezier-js";
 const ERROR_MARGIN = 0.001;
-function loadImage(url: string): Promise<HTMLImageElement> {
+function loadImage(url) {
     const img = new Image();
     return new Promise((res) => {
         img.addEventListener("load", res.bind(null, img));
         img.src = url;
     });
 }
-
-function is_out_range(x: number, y: number, start_x: number, end_x: number, start_y: number, end_y: number): boolean {
+function is_out_range(x, y, start_x, end_x, start_y, end_y) {
     return x < start_x || x > end_x || y < start_y || y > end_y;
 }
-
-function is_out_by_points(x: number, y: number, width: number, height: number, points: Array<Point>): boolean {
+function is_out_by_points(x, y, width, height, points) {
     let left = Number.MAX_SAFE_INTEGER;
     let right = Number.MIN_SAFE_INTEGER;
     let top = Number.MAX_SAFE_INTEGER;
@@ -31,23 +28,20 @@ function is_out_by_points(x: number, y: number, width: number, height: number, p
     // console.log(left, right, top, bottom);
     return x < left || x > right || y < top || y > bottom;
 }
-
-function is_out_range_by_box(x: number, y: number, box: BBox): boolean {
+function is_out_range_by_box(x, y, box) {
     const rang_x = box.x;
     const rang_y = box.y;
     return x < rang_x.min || x > rang_x.max || y < rang_y.min || y > rang_y.max;
 }
-
-function interpolation(rate: number, start: Point, end: Point): Point {
+function interpolation(rate, start, end) {
     const x = Math.round((1 - rate) * start.x + rate * end.x);
     const y = Math.round((1 - rate) * start.y + rate * end.y);
     return { x, y };
 }
-function interpolation_number(rate: number, start: number, end: number): number {
+function interpolation_number(rate, start, end) {
     return (1 - rate) * start + rate * end;
 }
-
-function pointHandler(points: Array<Point>, reverse: boolean = true): Array<Array<Point>> {
+function pointHandler(points, reverse = true) {
     const res = [];
     const length = points.length;
     let i = 0;
@@ -68,13 +62,11 @@ function pointHandler(points: Array<Point>, reverse: boolean = true): Array<Arra
     }
     return res;
 }
-
-function createBezier(points: Array<Point>) {
+function createBezier(points) {
     const p = pointHandler(points);
     return p.map((item) => new Bezier(item));
 }
-
-async function LoadImageBySize(url: string, width: number, height: number): Promise<string> {
+async function LoadImageBySize(url, width, height) {
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -84,45 +76,34 @@ async function LoadImageBySize(url: string, width: number, height: number): Prom
     ctx?.drawImage(img, 0, 0, width, height);
     return canvas.toDataURL();
 }
-
-function binary_search(
-    generator: (...ary: any) => number,
-    target: number,
-    left: number,
-    right: number,
-    margin_error: number
-) {
+function binary_search(generator, target, left, right, margin_error) {
     while (left <= right) {
         let mid = (left + right) / 2;
         const ans = generator(mid);
         if (Math.abs(ans - target) <= margin_error) {
             return mid;
-        } else if (ans < target) {
+        }
+        else if (ans < target) {
             left = mid;
-        } else {
+        }
+        else {
             right = mid;
         }
     }
     return left;
 }
-
-function length(bezier: Bezier, t: number) {
+function length(bezier, t) {
     const d = bezier.derivative(t);
     return Math.sqrt(d.x ** 2 + d.y ** 2);
 }
-
-function length_points(p1: Point, p2: Point): number {
+function length_points(p1, p2) {
     return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
 }
-
-function gs_length(bezier: Bezier, t: number) {
-    return (
-        (t / 2) *
-        (length(bezier, ((t / 2) * -1) / Math.sqrt(3) + t / 2) + length(bezier, ((t / 2) * 1) / Math.sqrt(3) + t / 2))
-    );
+function gs_length(bezier, t) {
+    return ((t / 2) *
+        (length(bezier, ((t / 2) * -1) / Math.sqrt(3) + t / 2) + length(bezier, ((t / 2) * 1) / Math.sqrt(3) + t / 2)));
 }
-
-function getLUTByLen(bezier: Bezier, n: number): Array<Point> {
+function getLUTByLen(bezier, n) {
     const ans = new Array(n);
     const length = gs_length(bezier, 1);
     const setp_length = length / n;
@@ -134,19 +115,4 @@ function getLUTByLen(bezier: Bezier, n: number): Array<Point> {
     }
     return ans;
 }
-
-export {
-    loadImage,
-    is_out_range,
-    is_out_range_by_box,
-    interpolation,
-    createBezier,
-    pointHandler,
-    LoadImageBySize,
-    binary_search,
-    gs_length,
-    getLUTByLen,
-    is_out_by_points,
-    interpolation_number,
-    length_points,
-};
+export { loadImage, is_out_range, is_out_range_by_box, interpolation, createBezier, pointHandler, LoadImageBySize, binary_search, gs_length, getLUTByLen, is_out_by_points, interpolation_number, length_points, };
