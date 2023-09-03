@@ -8,6 +8,8 @@ import {
     createBezier,
     LoadImageBySize,
     loadImage,
+    get_cross_point,
+    Line,
 } from "./utils";
 
 class Mesh {
@@ -51,20 +53,69 @@ class Mesh {
         const right_border = borders[1];
         const bottom_border = borders[2];
         const left_border = borders[3];
-        let x_n = top_border.length + 1;
-        const y_n = right_border.length + 1;
+        const x_n = top_border.length;
+        const y_n = right_border.length;
         for (let y = 0; y + 1 < y_n; ++y) {
             for (let x = 0; x + 1 < x_n; ++x) {
-                const top = top_border[x];
-                const bottom = bottom_border[x];
-                const left = left_border[y];
-                const right = right_border[y];
-                const setp_x = (right.x - left.x) / x_n;
-                const setp_y = (bottom.y - top.y) / y_n;
-                const a = { x: Math.round(left.x + x * setp_x), y: Math.round(top.y + y * setp_y) };
-                const b = { x: Math.round(left.x + (x + 1) * setp_x), y: Math.round(top.y + y * setp_y) };
-                const c = { x: Math.round(left.x + (x + 1) * setp_x), y: Math.round(top.y + (y + 1) * setp_y) };
-                const d = { x: Math.round(left.x + x * setp_x), y: Math.round(top.y + (y + 1) * setp_y) };
+                const top_1 = top_border[x];
+                const top_2 = top_border[x + 1];
+                const bottom_1 = bottom_border[x];
+                const bottom_2 = bottom_border[x + 1];
+                const left_1 = left_border[y];
+                const left_2 = left_border[y + 1];
+                const right_1 = right_border[y];
+                const right_2 = right_border[y + 1];
+
+                let a = { x: 0, y: 0 };
+                let b = { x: 0, y: 0 };
+                let c = { x: 0, y: 0 };
+                let d = { x: 0, y: 0 };
+
+                const width1 = right_1.x - left_1.x;
+                const width2 = right_2.x - left_2.x;
+                const height1 = bottom_1.y - top_1.y;
+                const height2 = bottom_2.y - top_2.y;
+
+                a.x = interpolation_number(x / (x_n - 1), left_1.x, right_1.x);
+                a.y = interpolation_number(y / (y_n - 1), top_1.y, bottom_1.y);
+
+                b.x = interpolation_number((x + 1) / (x_n - 1), left_1.x, right_1.x);
+                b.y = interpolation_number(y / (y_n - 1), top_2.y, bottom_2.y);
+
+                c.x = interpolation_number((x + 1) / (x_n - 1), left_2.x, right_2.x);
+                c.y = interpolation_number((y + 1) / (y_n - 1), top_2.y, bottom_2.y);
+
+                d.x = interpolation_number(x / (x_n - 1), left_2.x, right_2.x);
+                d.y = interpolation_number((y + 1) / (y_n - 1), top_1.y, bottom_1.y);
+
+                if (y === 0) {
+                    console.log(222);
+                    a.y = top_1.y;
+                    b.y = top_2.y;
+                }
+                if (y + 1 == y_n - 1) {
+                    d.y = bottom_1.y;
+                    c.y = bottom_2.y;
+                }
+                if (x === 0) {
+                    a.x = left_1.x;
+                    d.x = left_2.x;
+                }
+                if (x + 1 === x_n - 1) {
+                    b.x = right_1.x;
+                    c.x = right_2.x;
+                }
+                a.x = Math.round(a.x);
+                a.y = Math.round(a.y);
+
+                b.x = Math.round(b.x);
+                b.y = Math.round(b.y);
+
+                c.x = Math.round(c.x);
+                c.y = Math.round(c.y);
+
+                d.x = Math.round(d.x);
+                d.y = Math.round(d.y);
 
                 const uv_step_x = uv_width / x_n;
                 const uv_step_y = uv_height / y_n;
@@ -192,6 +243,14 @@ function triangle_render(
     uv: UVTriangle,
     cb: (point: Point, uv_point: Point) => void
 ) {
+    // ctx.strokeStyle = "black";
+    // ctx.beginPath();
+    // ctx.moveTo(a.x, a.y);
+    // ctx.lineTo(b.x, b.y);
+    // ctx.lineTo(c.x, c.y);
+    // ctx.closePath();
+    // ctx.stroke();
+    // return;
     let min_x = Math.min(a.x, b.x, c.x);
     let max_x = Math.max(a.x, b.x, c.x);
     let min_y = Math.min(a.y, b.y, c.y);
@@ -279,6 +338,7 @@ async function fn(image: string, width: number, height: number, bezier_points: A
     const target_imagedata = ctx.createImageData(width, height);
     const channels = origin_imgdata.data.length / (origin_imgdata.width * origin_imgdata.height);
     function cb(point: Point, uv_point: Point) {
+        // console.log(point, uv_point);
         for (let i = 0; i < channels; ++i) {
             px[i] = origin_imgdata.data[uv_point.y * width * channels + uv_point.x * channels + i];
         }
@@ -287,7 +347,7 @@ async function fn(image: string, width: number, height: number, bezier_points: A
         }
     }
     const [top_bezier, right_bezier, bottom_bezier, left_bezier] = createBezier(bezier_points);
-    const n = Math.round(Math.max(width, height) / 1.5);
+    const n = Math.round(Math.max(width, height) / 80);
     const top_points = getLUTByLen(top_bezier, n);
     const right_points = getLUTByLen(right_bezier, n);
     const bottom_points = getLUTByLen(bottom_bezier, n);
@@ -297,7 +357,7 @@ async function fn(image: string, width: number, height: number, bezier_points: A
     const px = new Uint8Array([0, 0, 0, 255]);
 
     mesh.render(cb);
-    ctx.clearRect(0, 0, width, height);
+    // ctx.clearRect(0, 0, width, height);
     ctx.putImageData(target_imagedata, 0, 0);
 
     const points = pointHandler(bezier_points, false);
@@ -311,13 +371,13 @@ async function fn(image: string, width: number, height: number, bezier_points: A
         url_ctx.moveTo(item[0].x, item[0].y);
         url_ctx.bezierCurveTo(item[1].x, item[1].y, item[2].x, item[2].y, item[3].x, item[3].y);
     });
-    // url_ctx.closePath();
-    // url_ctx.stroke();
+    url_ctx.closePath();
+    url_ctx.stroke();
     url_ctx.drawImage(canvas, 0, 0);
     return url_canvas.toDataURL();
 }
 
-const url = await fn(img_url, 143, 494, b2);
+const url = await fn(img_url, 1048, 1200, bezier_points);
 const img = new Image();
 img.src = url;
 document.body.append(img);

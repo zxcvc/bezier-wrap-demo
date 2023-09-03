@@ -135,6 +135,29 @@ function getLUTByLen(bezier: Bezier, n: number): Array<Point> {
     return ans;
 }
 
+class Line {
+    start: Point;
+    end: Point;
+    constructor(start: Point, end: Point) {
+        this.start = start;
+        this.end = end;
+    }
+}
+
+function get_cross_point(line_a: Line, line_b: Line): Point {
+    const A1 = line_a.start;
+    const A2 = line_a.end;
+    const B1 = line_b.start;
+    const B2 = line_b.end;
+    const x =
+        ((A1.x * A2.y - A1.y * A2.x) * (B1.x - B2.x) - (A1.x - A2.x) * (B1.x * B2.y - B1.y * B2.x)) /
+        ((A1.x - A2.x) * (B1.y - B2.y) - (A1.y - A2.y) * (B1.x - B2.x));
+    const y =
+        ((A1.x * A2.y - A1.y * A2.x) * (B1.y - B2.y) - (A1.y - A2.y) * (B1.x * B2.y - B1.y * B2.x)) /
+        ((A1.x - A2.x) * (B1.y - B2.y) - (A1.y - A2.y) * (B1.x - B2.x));
+    return { x: Math.round(x), y: Math.round(y) };
+}
+
 export {
     loadImage,
     is_out_range,
@@ -149,4 +172,6 @@ export {
     is_out_by_points,
     interpolation_number,
     length_points,
+    get_cross_point,
+    Line,
 };

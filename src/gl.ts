@@ -19,7 +19,7 @@ const bezier_points = [
     { x: 300.5, y: 274.0 },
 ];
 
-import { createBezier, loadImage, binary_search, interpolation, gs_length } from "./utils.ts";
+import { createBezier, loadImage, binary_search, interpolation, gs_length } from "./utils";
 import { Bezier, Point } from "bezier-js";
 let img_url = "/6.webp";
 
