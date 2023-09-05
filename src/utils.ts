@@ -47,6 +47,75 @@ function interpolation_number(rate: number, start: number, end: number): number 
     return (1 - rate) * start + rate * end;
 }
 
+function double_itnerpllation_point(x:number,y:number,A:Point,B:Point,C:Point,D:Point):Point{
+    let x0 = A.x
+    let y0 = A.y
+
+    let x1 = B.x
+    let y1 = B.y
+
+    let x2 = C.x
+    let y2 = C.y
+
+    let x3 = D.x
+    let y3 = D.y
+    
+    let weight0 = ((x1 - x) * (y1 - y)) / ((x1 - x0) * (y1 - y0))
+    let weight1 = ((x - x0) * (y1 - y)) / ((x1 - x0) * (y1 - y0))
+    let weight2 = ((x1 - x) * (y - y0)) / ((x1 - x0) * (y1 - y0))
+    let weight3 = ((x - x0) * (y - y0)) / ((x1 - x0) * (y1 - y0))
+
+
+    return {
+        x:Math.round(x),
+        y:Math.round(y)
+    }
+}
+
+// 定义高斯函数作为径向基函数
+function gaussian(r: number): number {
+    const sigma = 1; // 高斯函数的标准差
+    return Math.exp(-(r ** 2) / (2 * sigma ** 2));
+  }
+  function linear(r: number): number {
+    return Math.max(0, 1 - r);
+  }
+  function thinPlateSpline(r: number): number {
+    return r === 0 ? 0 : r ** 2 * Math.log(r);
+  }
+  function multiquadricWithTension(r: number, tension: number = 0.1): number {
+    return Math.sqrt(1 + (tension * r) ** 2);
+  }
+  function polynomial(r: number, degree: number = 0): number {
+    return Math.pow(r, degree);
+  }
+  function morletWavelet(r: number): number {
+    return Math.cos(r) * Math.exp(-(r ** 2) / 2);
+  }
+  function shepard(r: number, power: number = 1): number {
+    return 1 / Math.pow(r, power);
+  }
+  // 定义径向基函数插值函数
+  function radialBasisFunctionInterpolation(
+    targetPoint: { x: number; y: number },
+    knownPoints: { x: number; y: number; value: number }[],
+  ): number {
+    // 计算目标点与已知点之间的距离
+    const distances = knownPoints.map(point => Math.sqrt((point.x - targetPoint.x) ** 2 + (point.y - targetPoint.y) ** 2));
+  
+    // 计算权重
+    const weights = distances.map(distance => shepard(distance));
+  
+    // 计算插值结果
+    const interpolatedValue = weights.reduce((sum, weight, index) => {
+      return sum + weight * knownPoints[index].value;
+    }, 0) / weights.reduce((sum, weight) => sum + weight, 0);
+  
+    return interpolatedValue;
+  }
+// function interpllation_line(rate:number,start:Line,end:Line):Line{
+// }
+
 function pointHandler(points: Array<Point>, reverse: boolean = true): Array<Array<Point>> {
     const res = [];
     const length = points.length;
@@ -122,16 +191,18 @@ function gs_length(bezier: Bezier, t: number) {
     );
 }
 
+
 function getLUTByLen(bezier: Bezier, n: number): Array<Point> {
     const ans = new Array(n);
     const length = gs_length(bezier, 1);
     const setp_length = length / n;
     const generator = gs_length.bind(null, bezier);
-    for (let i = 0; i < n; ++i) {
+    for (let i = 0; i <= n; ++i) {
         const len = i * setp_length;
         const t = binary_search(generator, len, 0, 1, ERROR_MARGIN);
         ans[i] = bezier.compute(t);
     }
+    console.log()
     return ans;
 }
 
@@ -174,4 +245,6 @@ export {
     length_points,
     get_cross_point,
     Line,
+    double_itnerpllation_point,
+    radialBasisFunctionInterpolation
 };

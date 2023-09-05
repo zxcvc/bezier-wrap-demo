@@ -4,6 +4,9 @@ dependencies:
   bezier-js:
     specifier: ^6.1.4
     version: 6.1.4
+  libtess:
+    specifier: ^1.2.2
+    version: registry.npmmirror.com/libtess@1.2.2
   mathjs:
     specifier: ^11.9.1
     version: 11.9.1
@@ -1048,6 +1051,12 @@ packages:
       prelude-ls: registry.npmmirror.com/prelude-ls@1.1.2
       type-check: registry.npmmirror.com/type-check@0.3.2
     dev: true
+
+  registry.npmmirror.com/libtess@1.2.2:
+    resolution: {integrity: sha512-Nps8HPeVVcsmJxUvFLKVJcCgcz+1ajPTXDVAVPs6+giOQP4AHV31uZFFkh+CKow/bkB7GbZWKmwmit7myaqDSw==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/libtess/-/libtess-1.2.2.tgz}
+    name: libtess
+    version: 1.2.2
+    dev: false
 
   registry.npmmirror.com/lil-gui@0.17.0:
     resolution: {integrity: sha512-MVBHmgY+uEbmJNApAaPbtvNh1RCAeMnKym82SBjtp5rODTYKWtM+MXHCifLe2H2Ti1HuBGBtK/5SyG4ShQ3pUQ==, registry: https://registry.npm.taobao.org/, tarball: https://registry.npmmirror.com/lil-gui/-/lil-gui-0.17.0.tgz}

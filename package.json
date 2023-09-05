@@ -24,6 +24,7 @@
     },
     "dependencies": {
         "bezier-js": "^6.1.4",
+        "libtess": "^1.2.2",
         "mathjs": "^11.9.1",
         "three": "^0.155.0"
     }
