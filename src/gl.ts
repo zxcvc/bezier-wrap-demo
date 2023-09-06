@@ -191,6 +191,34 @@ async function fn(width: number, height: number, imgurl: string, bezier_points: 
     gl?.drawArrays(gl?.TRIANGLE_FAN, 0, v_points.length / 2);
     return canvas.toDataURL();
 }
+const b1 = [
+    { x: 269.0, y: -1.3 },
+    { x: 206.7, y: 1.3 },
+    { x: 141.8, y: 14.3 },
+    { x: 90.8, y: 45.3 },
+    { x: 107.0, y: 318.0 },
+    { x: 115.0, y: 584.9 },
+    { x: -6.5, y: 893.5 },
+    { x: 21.8, y: 930.5 },
+    { x: 74.2, y: 949.0 },
+    { x: 122.5, y: 955.5 },
+    { x: 347.0, y: 647.9 },
+    { x: 289.5, y: 304.5 },
+];
 
+const b2 = [
+    { x: 0.5, y: -0.5 },
+    { x: 146.4, y: 69.1 },
+    { x: 131.8, y: 283.5 },
+    { x: 143.8, y: 464.0 },
+    { x: 138.6, y: 472.5 },
+    { x: 133.1, y: 481.4 },
+    { x: 125.9, y: 493.8 },
+    { x: 108.8, y: 296.5 },
+    { x: 120.7, y: 116.0 },
+    { x: 6.6, y: 36.3 },
+    { x: 5.3, y: 23.6 },
+    { x: 3.2, y: 11.8 },
+];
 fn(width, height, img_url, bezier_points);
 export default fn;

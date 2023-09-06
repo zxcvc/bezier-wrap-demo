@@ -59,7 +59,7 @@ function double_itnerpllation_point(x:number,y:number,A:Point,B:Point,C:Point,D:
 
     let x3 = D.x
     let y3 = D.y
-    
+
     let weight0 = ((x1 - x) * (y1 - y)) / ((x1 - x0) * (y1 - y0))
     let weight1 = ((x - x0) * (y1 - y)) / ((x1 - x0) * (y1 - y0))
     let weight2 = ((x1 - x) * (y - y0)) / ((x1 - x0) * (y1 - y0))
@@ -206,6 +206,14 @@ function getLUTByLen(bezier: Bezier, n: number): Array<Point> {
     return ans;
 }
 
+function get_point_by_length_rate(t:number,bezier:Bezier):Point{
+    const length = bezier.length()
+    const len = length * t
+    const generator = gs_length.bind(null, bezier);
+    const _t = binary_search(generator,len,0,1,ERROR_MARGIN)
+    return bezier.compute(_t)
+}
+
 class Line {
     start: Point;
     end: Point;
@@ -246,5 +254,6 @@ export {
     get_cross_point,
     Line,
     double_itnerpllation_point,
-    radialBasisFunctionInterpolation
+    radialBasisFunctionInterpolation,
+    get_point_by_length_rate
 };

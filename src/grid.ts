@@ -13,6 +13,7 @@ import {
     is_out_range,
     double_itnerpllation_point,
     radialBasisFunctionInterpolation,
+    length_points,
 } from "./utils";
 
 class Mesh {
@@ -31,24 +32,6 @@ class Mesh {
         this.cteate_grid(this.borders, uv_width, uv_height);
     }
 
-    // create_border(width: number, height: number, n: number) {
-    //     const setp_x = width / n;
-    //     const setp_y = height / n;
-    //     const top_border = [];
-    //     const bottom_border = [];
-    //     const left_border = [];
-    //     const right_border = [];
-
-    //     for (let i = 0; i < n + 1; ++i) {
-    //         const x = setp_x * i;
-    //         const y = setp_y * i;
-    //         top_border.push({ x: x, y: 0 });
-    //         bottom_border.push({ x: x, y: height });
-    //         left_border.push({ x: 0, y: y });
-    //         right_border.push({ x: width, y: y });
-    //     }
-    //     this.borders.push(top_border, right_border, bottom_border, left_border);
-    // }
 
     cteate_grid(borders: Array<Border>, uv_width: number, uv_height: number) {
         const grids: Array<VertexGrid> = [];
@@ -94,24 +77,21 @@ class Mesh {
         for(let i = 0; i < y_n; ++i){
             grid_points[i][0] = left_border.point[i]
         }
-
+        console.log(x_n,y_n)
         console.log(top_border.point)
-        for(let y = 0; y < y_n; ++y){
-            for(let x = 0; x < x_n; ++x){
+        for(let y = 1; y < y_n-1; ++y){
+            for(let x = 1; x < x_n-1; ++x){
                 // grid_points[y][x].x = interpolation_number(x/(x_n-1),top_border.point[y].x,bottom_border.point[y].x)
                 // grid_points[y][x].y = interpolation_number(y/(y_n-1),left_border.point[x].y,right_border.point[x].y)
-           
-                const wx2 = x / (x_n-1)
-                const wx1 = 1 - wx2
-                const wy2 = y / (y_n-1)
-                const wy1 = 1 - wy2
-                grid_points[y][x] = double_itnerpllation_point(wx1,wx2,wy1,wy2,top_border.point[x],right_border.point[y],bottom_border.point[x],left_border.point[x])
-                // grid_points[y][x].x = radialBasisFunctionInterpolation({x,y},[{value:top_border.point[x].x,x:x,y:0},{value:bottom_border.point[x].x,x:x,y:y_n-1},{value:left_border.point[y].x,x:0,y},{value:right_border.point[y].x,x:x_n-1,y}])
-                // grid_points[y][x].y = radialBasisFunctionInterpolation({x,y},[{value:top_border.point[x].y,x:x,y:0},{value:bottom_border.point[x].y,x:x,y:y_n-1},{value:left_border.point[y].y,x:0,y},{value:right_border.point[y].y,x:x_n-1,y}])
-                if(x === 0){
-                    console.log(wx1,wx2,wy1,wy2)
-                    console.log(grid_points[y][x])
+                const x_length = length_points(left_border.point[y],right_border.point[y])
+                const y_length = length_points(top_border.point[x],bottom_border.point[x])
+                let p
+                if(x_length > y_length){
+                    p = interpolation(y/(y_n-1),top_border.point[x],bottom_border.point[x])
+                }else{
+                    p = interpolation(x/(x_n-1),left_border.point[y],right_border.point[y])
                 }
+                grid_points[y][x] = p
             }
         }
        
@@ -371,8 +351,8 @@ async function fn(image: string, width: number, height: number, bezier_points: A
     const channels = origin_imgdata.data.length / (origin_imgdata.width * origin_imgdata.height);
 
     const n = Math.round(Math.max(width, height) / 2);
-    const x_n = Math.max(2,Math.round(width/factor))
-    const y_n = Math.max(2,Math.round(height/factor))
+    const x_n = Math.max(5,Math.round(width/factor))
+    const y_n = Math.max(5,Math.round(height/factor))
     // const [top_bezier, right_bezier, bottom_bezier, left_bezier] = createBezier(bezier_points);
     const [top,right,bottom,left] =  pointHandler(bezier_points,true)
     const top_border = new Border(top,x_n)
@@ -427,7 +407,7 @@ async function fn(image: string, width: number, height: number, bezier_points: A
 }
 
 console.time('1')
-const url = await fn(img_url, 1048, 1200, bezier_points,100);
+const url = await fn(img_url, 1048, 1200, bezier_points,150);
 console.timeEnd('1')
 const img = new Image();
 img.src = url;
