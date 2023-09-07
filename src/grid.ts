@@ -1,4 +1,10 @@
+if (typeof (window as any).global === 'undefined') {
+    ;(window as any).global = window
+  }
 import { matrix, det, row } from "mathjs";
+import Delaunator  from 'delaunator'
+import p2t from 'poly2tri'
+
 import { Bezier, type Point } from "bezier-js";
 import {
     pointHandler,
@@ -14,6 +20,7 @@ import {
     double_itnerpllation_point,
     radialBasisFunctionInterpolation,
     length_points,
+    inverseDistanceWeighting,
 } from "./utils";
 
 class Mesh {
@@ -54,7 +61,7 @@ class Mesh {
             [max_border2,min_border2] = [min_border2,max_border2];
         }
 
-    
+
 
         console.log(x_n,y_n)
         const grid_points = new Array(y_n)
@@ -83,6 +90,7 @@ class Mesh {
             for(let x = 1; x < x_n-1; ++x){
                 // grid_points[y][x].x = interpolation_number(x/(x_n-1),top_border.point[y].x,bottom_border.point[y].x)
                 // grid_points[y][x].y = interpolation_number(y/(y_n-1),left_border.point[x].y,right_border.point[x].y)
+                
                 const x_length = length_points(left_border.point[y],right_border.point[y])
                 const y_length = length_points(top_border.point[x],bottom_border.point[x])
                 let p
@@ -92,6 +100,12 @@ class Mesh {
                     p = interpolation(x/(x_n-1),left_border.point[y],right_border.point[y])
                 }
                 grid_points[y][x] = p
+
+                // const rx = x / (x_n - 1)
+                // const ry = y / (y_n - 1)
+                // const p = double_itnerpllation_point(rx,ry,top_border.point[x],right_border.point[y],bottom_border.point[x],left_border.point[y])
+                const point = inverseDistanceWeighting([{x:x,y:0},{x:x_n-1,y:y},{x:x,y:y_n-1},{x:0,y:y}],[top_border.point[x],right_border.point[y],bottom_border.point[x],left_border.point[y]],{x:x,y:y},1)
+                grid_points[y][x] = point
             }
         }
        
@@ -343,7 +357,7 @@ async function fn(image: string, width: number, height: number, bezier_points: A
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    // document.body.append(canvas);
+    document.body.append(canvas);
     const ctx = canvas.getContext("2d")!;
     // ctx.drawImage(img_el, 0, 0, width, height);
     const origin_imgdata = ctx.getImageData(0, 0, width, height);
@@ -353,20 +367,90 @@ async function fn(image: string, width: number, height: number, bezier_points: A
     const n = Math.round(Math.max(width, height) / 2);
     const x_n = Math.max(5,Math.round(width/factor))
     const y_n = Math.max(5,Math.round(height/factor))
-    // const [top_bezier, right_bezier, bottom_bezier, left_bezier] = createBezier(bezier_points);
-    const [top,right,bottom,left] =  pointHandler(bezier_points,true)
+    const [top,right,bottom,left] =  pointHandler(bezier_points,false)
+
+    
+
     const top_border = new Border(top,x_n)
     const right_border = new Border(right,y_n)
     const bottom_border = new Border(bottom,x_n)
     const left_border = new Border(left,y_n)
+
+    const a = top_border.point.flatMap(item=> new p2t.Point(item.x,item.y))
+    const b = right_border.point.flatMap(item=> new p2t.Point(item.x,item.y))
+    const c = bottom_border.point.flatMap(item=> new p2t.Point(item.x,item.y))
+    const d = left_border.point.flatMap(item=> new p2t.Point(item.x,item.y))
+    
+    {
+        const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    document.body.append(canvas);
+    const ctx = canvas.getContext("2d")!;
+
+        const tt = []
+    const bb = []
+    const ll = []
+    const rr = []
+    const x_step = width/x_n
+    const y_step = height/y_n
+    
+    for(let i = 0; i <= y_n; ++i){
+        rr[i] = new p2t.Point(width,y_step*i)
+        ll[i] = new p2t.Point(0,y_step*(i))
+    }
+    for(let i = 0; i <= x_n; ++i){
+        tt[i] = new p2t.Point(x_step*i,0)
+        bb[i] = new p2t.Point(x_step*(i),height)
+    }
+    bb.reverse()
+    ll.reverse()
+    tt.pop()
+    rr.pop()
+    bb.pop()
+    ll.pop()
+    console.log(tt,rr,bb,ll)
+    const _coords  = ([] as poly2tri.Point[]).concat(tt).concat(rr).concat(bb).concat(ll)
+    console.log(_coords)
+    const _swctx = new p2t.SweepContext(_coords)
+    _swctx.triangulate()
+    const _triangles = _swctx.getTriangles()
+    ctx.beginPath()
+    for(let i = 0; i < _triangles.length; ++i){
+        const triangle = _triangles[i]
+        const [p1,p2,p3] = triangle.getPoints()
+        ctx.moveTo(p1.x,p1.y)
+        ctx.lineTo(p2.x,p2.y)
+        ctx.lineTo(p3.x,p3.y)
+        ctx.closePath()
+        ctx.stroke()
+        // ctx.fill()
+    }
+    }
+
+// return '1'
+    const coords = [...a,...b,...c,...d]
+    const swctx = new p2t.SweepContext(coords)
+    swctx.triangulate()
+    const triangles = swctx.getTriangles()
+    console.log(triangles)
+    
+    for(let i = 0; i < triangles.length; ++i){
+        const triangle = triangles[i]
+        ctx.beginPath()
+        const [p1,p2,p3] = triangle.getPoints()
+        ctx.moveTo(p1.x,p1.y)
+        ctx.lineTo(p2.x,p2.y)
+        ctx.lineTo(p3.x,p3.y)
+        ctx.closePath()
+        ctx.stroke()
+        // ctx.fill()
+    }
+    return '1'
  
-    // const top_points = getLUTByLen(top_bezier, x_n);
-    // const right_points = getLUTByLen(right_bezier, y_n);
-    // const bottom_points = getLUTByLen(bottom_bezier, x_n);
-    // const left_points = getLUTByLen(left_bezier, y_n);
     const mesh = new Mesh(ctx, [top_border, right_border, bottom_border, left_border], n, width, height);
 
-    const px = new Uint8Array([0, 0, 0, 255]);
+    const px = new Uint8Array([0, 0, 0, 0]);
 
     function cb(point: Point, uv_point: Point) {
        
@@ -377,7 +461,7 @@ async function fn(image: string, width: number, height: number, bezier_points: A
             px[0] = 0
             px[1] = 0
             px[2] = 0
-            px[3] = 255
+            px[3] = 0
         }
         for (let i = 0; i < channels; ++i) {
             target_imagedata.data[point.y * width * channels + point.x * channels + i] = px[i];
@@ -398,16 +482,16 @@ async function fn(image: string, width: number, height: number, bezier_points: A
         url_ctx.moveTo(item[0].x, item[0].y);
         url_ctx.bezierCurveTo(item[1].x, item[1].y, item[2].x, item[2].y, item[3].x, item[3].y);
     });
-    url_ctx.strokeStyle = 'red'
+    // url_ctx.strokeStyle = 'red'
     // url_ctx.closePath();
-    url_ctx.stroke();
     // url_ctx.clip()
+    // url_ctx.stroke();
     url_ctx.drawImage(canvas, 0, 0);
     return url_canvas.toDataURL();
 }
 
 console.time('1')
-const url = await fn(img_url, 1048, 1200, bezier_points,150);
+const url = await fn(img_url, 1048, 1200, bezier_points,100);
 console.timeEnd('1')
 const img = new Image();
 img.src = url;
