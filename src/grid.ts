@@ -1,9 +1,9 @@
-if (typeof (window as any).global === 'undefined') {
-    ;(window as any).global = window
-  }
+if (typeof (window as any).global === "undefined") {
+    (window as any).global = window;
+}
 import { matrix, det, row } from "mathjs";
-import Delaunator  from 'delaunator'
-import p2t from 'poly2tri'
+import Delaunator from "delaunator";
+import p2t from "poly2tri";
 
 import { Bezier, type Point } from "bezier-js";
 import {
@@ -27,18 +27,20 @@ class Mesh {
     ctx: CanvasRenderingContext2D;
     borders: Array<Border> = [];
     grids: Array<VertexGrid> = [];
+    triangles: Array<VectexTriangle> = [];
     constructor(
         ctx: CanvasRenderingContext2D,
         borders: Array<Border>,
         n: number,
         uv_width: number,
-        uv_height: number
+        uv_height: number,
+        factor: number
     ) {
         this.ctx = ctx;
         this.borders = borders;
         this.cteate_grid(this.borders, uv_width, uv_height);
+        // this.crate_triangle(this.borders, uv_width, uv_height, factor);
     }
-
 
     cteate_grid(borders: Array<Border>, uv_width: number, uv_height: number) {
         const grids: Array<VertexGrid> = [];
@@ -47,77 +49,81 @@ class Mesh {
         const bottom_border = borders[2];
         const left_border = borders[3];
 
-        
         const x_n = top_border.point.length;
         const y_n = right_border.point.length;
 
-        let max_border1 = top_border
-        let max_border2 = bottom_border
-        let min_border1  = left_border
-        let min_border2 = right_border
-        
-        if(y_n > x_n){
-            [max_border1,min_border1] = [min_border1,max_border1];
-            [max_border2,min_border2] = [min_border2,max_border2];
+        let max_border1 = top_border;
+        let max_border2 = bottom_border;
+        let min_border1 = left_border;
+        let min_border2 = right_border;
+
+        if (y_n > x_n) {
+            [max_border1, min_border1] = [min_border1, max_border1];
+            [max_border2, min_border2] = [min_border2, max_border2];
         }
 
-
-
-        console.log(x_n,y_n)
-        const grid_points = new Array(y_n)
-        for(let i = 0; i < y_n; ++i){
-            const rows = new Array(x_n)
-            for(let j = 0; j < x_n; ++j){
-                rows[j] = {x:0,y:0}
+        console.log(x_n, y_n);
+        const grid_points = new Array(y_n);
+        for (let i = 0; i < y_n; ++i) {
+            const rows = new Array(x_n);
+            for (let j = 0; j < x_n; ++j) {
+                rows[j] = { x: 0, y: 0 };
             }
-            grid_points[i] = rows
+            grid_points[i] = rows;
         }
-        for(let i = 0; i < x_n; ++i){
-            grid_points[0][i] = top_border.point[i]
+        for (let i = 0; i < x_n; ++i) {
+            grid_points[0][i] = top_border.point[i];
         }
-        for(let i = 0; i < y_n; ++i){
-            grid_points[i][x_n-1] = right_border.point[i]
+        for (let i = 0; i < y_n; ++i) {
+            grid_points[i][x_n - 1] = right_border.point[i];
         }
-        for(let i = 0; i < x_n; ++i){
-            grid_points[y_n-1][i] = bottom_border.point[i]
+        for (let i = 0; i < x_n; ++i) {
+            grid_points[y_n - 1][i] = bottom_border.point[i];
         }
-        for(let i = 0; i < y_n; ++i){
-            grid_points[i][0] = left_border.point[i]
+        for (let i = 0; i < y_n; ++i) {
+            grid_points[i][0] = left_border.point[i];
         }
-        console.log(x_n,y_n)
-        console.log(top_border.point)
-        for(let y = 1; y < y_n-1; ++y){
-            for(let x = 1; x < x_n-1; ++x){
+        console.log(x_n, y_n);
+        console.log(top_border.point);
+        for (let y = 1; y < y_n - 1; ++y) {
+            for (let x = 1; x < x_n - 1; ++x) {
                 // grid_points[y][x].x = interpolation_number(x/(x_n-1),top_border.point[y].x,bottom_border.point[y].x)
                 // grid_points[y][x].y = interpolation_number(y/(y_n-1),left_border.point[x].y,right_border.point[x].y)
-                
-                const x_length = length_points(left_border.point[y],right_border.point[y])
-                const y_length = length_points(top_border.point[x],bottom_border.point[x])
-                let p
-                if(x_length > y_length){
-                    p = interpolation(y/(y_n-1),top_border.point[x],bottom_border.point[x])
-                }else{
-                    p = interpolation(x/(x_n-1),left_border.point[y],right_border.point[y])
+
+                const x_length = length_points(left_border.point[y], right_border.point[y]);
+                const y_length = length_points(top_border.point[x], bottom_border.point[x]);
+                let p;
+                if (x_length > y_length) {
+                    p = interpolation(y / (y_n - 1), top_border.point[x], bottom_border.point[x]);
+                } else {
+                    p = interpolation(x / (x_n - 1), left_border.point[y], right_border.point[y]);
                 }
-                grid_points[y][x] = p
+                grid_points[y][x] = p;
 
                 // const rx = x / (x_n - 1)
                 // const ry = y / (y_n - 1)
                 // const p = double_itnerpllation_point(rx,ry,top_border.point[x],right_border.point[y],bottom_border.point[x],left_border.point[y])
-                const point = inverseDistanceWeighting([{x:x,y:0},{x:x_n-1,y:y},{x:x,y:y_n-1},{x:0,y:y}],[top_border.point[x],right_border.point[y],bottom_border.point[x],left_border.point[y]],{x:x,y:y},1)
-                grid_points[y][x] = point
+                const point = inverseDistanceWeighting(
+                    [
+                        { x: x, y: 0 },
+                        { x: x_n - 1, y: y },
+                        { x: x, y: y_n - 1 },
+                        { x: 0, y: y },
+                    ],
+                    [top_border.point[x], right_border.point[y], bottom_border.point[x], left_border.point[y]],
+                    { x: x, y: y },
+                    1
+                );
+                grid_points[y][x] = point;
             }
         }
-       
-        for(let y = 0; y < y_n-1; ++y){
-            for(let x = 0; x < x_n-1; ++x){
 
-            
-
-                let a = grid_points[y][x]
-                let b = grid_points[y][x+1]
-                let c = grid_points[y+1][x+1]
-                let d = grid_points[y+1][x]
+        for (let y = 0; y < y_n - 1; ++y) {
+            for (let x = 0; x < x_n - 1; ++x) {
+                let a = grid_points[y][x];
+                let b = grid_points[y][x + 1];
+                let c = grid_points[y + 1][x + 1];
+                let d = grid_points[y + 1][x];
 
                 a.x = Math.round(a.x);
                 a.y = Math.round(a.y);
@@ -131,20 +137,90 @@ class Mesh {
                 d.x = Math.round(d.x);
                 d.y = Math.round(d.y);
 
-                const uv_step_x = uv_width / (x_n-1);
-                const uv_step_y = uv_height / (y_n-1);
+                const uv_step_x = uv_width / (x_n - 1);
+                const uv_step_y = uv_height / (y_n - 1);
                 const uv_a = { x: Math.round(x * uv_step_x), y: Math.round(y * uv_step_y) };
                 const uv_b = { x: Math.round((x + 1) * uv_step_x), y: Math.round(y * uv_step_y) };
                 const uv_c = { x: Math.round((x + 1) * uv_step_x), y: Math.round((y + 1) * uv_step_y) };
                 const uv_d = { x: Math.round(x * uv_step_x), y: Math.round((y + 1) * uv_step_y) };
                 const uv_grid = new UVGrid(uv_a, uv_b, uv_c, uv_d);
 
-               
                 const grid = new VertexGrid(a, b, c, d, uv_grid);
                 grids.push(grid);
             }
         }
         this.grids = grids;
+    }
+    crate_triangle(borders: Array<Border>, width: number, height: number, factor: number) {
+        const x_n = Math.max(5, Math.round(width / factor));
+        const y_n = Math.max(5, Math.round(height / factor));
+
+        const [top_border, right_border, bottom_border, left_border] = borders;
+        const a = top_border.point.flatMap((item) => new p2t.Point(item.x, item.y));
+        const b = right_border.point.flatMap((item) => new p2t.Point(item.x, item.y));
+        const c = bottom_border.point.flatMap((item) => new p2t.Point(item.x, item.y));
+        const d = left_border.point.flatMap((item) => new p2t.Point(item.x, item.y));
+        a.pop();
+        b.pop();
+        c.pop();
+        d.pop();
+
+        const tt = [];
+        const bb = [];
+        const ll = [];
+        const rr = [];
+        const x_step = width / x_n;
+        const y_step = height / y_n;
+
+        for (let i = 0; i <= y_n; ++i) {
+            rr[i] = new p2t.Point(width, y_step * i);
+            ll[i] = new p2t.Point(0, y_step * i);
+        }
+        for (let i = 0; i <= x_n; ++i) {
+            tt[i] = new p2t.Point(x_step * i, 0);
+            bb[i] = new p2t.Point(x_step * i, height);
+        }
+        bb.reverse();
+        ll.reverse();
+        tt.pop();
+        rr.pop();
+        bb.pop();
+        ll.pop();
+
+        const _coords = ([] as poly2tri.Point[]).concat(tt).concat(rr).concat(bb).concat(ll);
+        const _swctx = new p2t.SweepContext(_coords);
+        _swctx.triangulate();
+        const _triangles = _swctx.getTriangles();
+
+        const coords = ([] as poly2tri.Point[]).concat(a).concat(b).concat(c).concat(d);
+        const swctx = new p2t.SweepContext(coords);
+        swctx.triangulate();
+        const triangles = swctx.getTriangles();
+        console.log(_triangles, triangles);
+
+        for (let i = 0; i < triangles.length; ++i) {
+            const triangle = triangles[i];
+            const _triangle = _triangles[i];
+            const points = triangle.getPoints().map((item) => {
+                item.x = Math.round(item.x);
+                item.y = Math.round(item.y);
+                return item;
+            });
+            const _pointes = _triangle.getPoints().map((item) => {
+                item.x = Math.round(item.x);
+                item.y = Math.round(item.y);
+                return item;
+            });
+            this.triangles.push(
+                new VectexTriangle(
+                    points[0],
+                    points[1],
+                    points[2],
+                    new UVTriangle(_pointes[0], _pointes[1], _pointes[2]),
+                    triangle_render
+                )
+            );
+        }
     }
     render(cb: (point: Point, uv_point: Point) => void) {
         for (let item of this.grids) {
@@ -258,14 +334,14 @@ function triangle_render(
     uv: UVTriangle,
     cb: (point: Point, uv_point: Point) => void
 ) {
-    ctx.strokeStyle = "black";
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.lineTo(b.x, b.y);
-    ctx.lineTo(c.x, c.y);
-    ctx.closePath();
-    ctx.stroke();
-    return;
+    // ctx.strokeStyle = "black";
+    // ctx.beginPath();
+    // ctx.moveTo(a.x, a.y);
+    // ctx.lineTo(b.x, b.y);
+    // ctx.lineTo(c.x, c.y);
+    // ctx.closePath();
+    // ctx.stroke();
+    // return;
     let min_x = Math.min(a.x, b.x, c.x);
     let max_x = Math.max(a.x, b.x, c.x);
     let min_y = Math.min(a.y, b.y, c.y);
@@ -340,136 +416,67 @@ const b2 = [
     { x: 3.2, y: 11.8 },
 ];
 
-class Border{
-    bezier:Bezier
-    origin_point:Array<Point>
-    point:Array<Point>
-    constructor(points:Array<Point>,n:number){
-        this.origin_point = points
-        const bezier = new Bezier(points)
-        this.bezier = bezier
-        this.point = getLUTByLen(bezier,n)
+class Border {
+    bezier: Bezier;
+    origin_point: Array<Point>;
+    point: Array<Point>;
+    constructor(points: Array<Point>, n: number) {
+        this.origin_point = points;
+        const bezier = new Bezier(points);
+        this.bezier = bezier;
+        this.point = getLUTByLen(bezier, n);
     }
 }
-async function fn(image: string, width: number, height: number, bezier_points: Array<Point>,factor = 2): Promise<string> {
+async function fn(
+    image: string,
+    width: number,
+    height: number,
+    bezier_points: Array<Point>,
+    factor = 2
+): Promise<string> {
     const img = await LoadImageBySize(image, width, height);
     const img_el = await loadImage(img);
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    document.body.append(canvas);
+    // document.body.append(canvas);
     const ctx = canvas.getContext("2d")!;
-    // ctx.drawImage(img_el, 0, 0, width, height);
+    ctx.drawImage(img_el, 0, 0, width, height);
     const origin_imgdata = ctx.getImageData(0, 0, width, height);
     const target_imagedata = ctx.createImageData(width, height);
     const channels = origin_imgdata.data.length / (origin_imgdata.width * origin_imgdata.height);
 
     const n = Math.round(Math.max(width, height) / 2);
-    const x_n = Math.max(5,Math.round(width/factor))
-    const y_n = Math.max(5,Math.round(height/factor))
-    const [top,right,bottom,left] =  pointHandler(bezier_points,false)
+    const x_n = Math.max(5, Math.round(width / factor));
+    const y_n = Math.max(5, Math.round(height / factor));
+    const [top, right, bottom, left] = pointHandler(bezier_points, true);
 
-    
+    const top_border = new Border(top, x_n);
+    const right_border = new Border(right, y_n);
+    const bottom_border = new Border(bottom, x_n);
+    const left_border = new Border(left, y_n);
 
-    const top_border = new Border(top,x_n)
-    const right_border = new Border(right,y_n)
-    const bottom_border = new Border(bottom,x_n)
-    const left_border = new Border(left,y_n)
-
-    const a = top_border.point.flatMap(item=> new p2t.Point(item.x,item.y))
-    const b = right_border.point.flatMap(item=> new p2t.Point(item.x,item.y))
-    const c = bottom_border.point.flatMap(item=> new p2t.Point(item.x,item.y))
-    const d = left_border.point.flatMap(item=> new p2t.Point(item.x,item.y))
-    
-    {
-        const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    document.body.append(canvas);
-    const ctx = canvas.getContext("2d")!;
-
-        const tt = []
-    const bb = []
-    const ll = []
-    const rr = []
-    const x_step = width/x_n
-    const y_step = height/y_n
-    
-    for(let i = 0; i <= y_n; ++i){
-        rr[i] = new p2t.Point(width,y_step*i)
-        ll[i] = new p2t.Point(0,y_step*(i))
-    }
-    for(let i = 0; i <= x_n; ++i){
-        tt[i] = new p2t.Point(x_step*i,0)
-        bb[i] = new p2t.Point(x_step*(i),height)
-    }
-    bb.reverse()
-    ll.reverse()
-    tt.pop()
-    rr.pop()
-    bb.pop()
-    ll.pop()
-    console.log(tt,rr,bb,ll)
-    const _coords  = ([] as poly2tri.Point[]).concat(tt).concat(rr).concat(bb).concat(ll)
-    console.log(_coords)
-    const _swctx = new p2t.SweepContext(_coords)
-    _swctx.triangulate()
-    const _triangles = _swctx.getTriangles()
-    ctx.beginPath()
-    for(let i = 0; i < _triangles.length; ++i){
-        const triangle = _triangles[i]
-        const [p1,p2,p3] = triangle.getPoints()
-        ctx.moveTo(p1.x,p1.y)
-        ctx.lineTo(p2.x,p2.y)
-        ctx.lineTo(p3.x,p3.y)
-        ctx.closePath()
-        ctx.stroke()
-        // ctx.fill()
-    }
-    }
-
-// return '1'
-    const coords = [...a,...b,...c,...d]
-    const swctx = new p2t.SweepContext(coords)
-    swctx.triangulate()
-    const triangles = swctx.getTriangles()
-    console.log(triangles)
-    
-    for(let i = 0; i < triangles.length; ++i){
-        const triangle = triangles[i]
-        ctx.beginPath()
-        const [p1,p2,p3] = triangle.getPoints()
-        ctx.moveTo(p1.x,p1.y)
-        ctx.lineTo(p2.x,p2.y)
-        ctx.lineTo(p3.x,p3.y)
-        ctx.closePath()
-        ctx.stroke()
-        // ctx.fill()
-    }
-    return '1'
- 
-    const mesh = new Mesh(ctx, [top_border, right_border, bottom_border, left_border], n, width, height);
-
+    const mesh = new Mesh(ctx, [top_border, right_border, bottom_border, left_border], n, width, height, factor);
+    console.log(mesh);
     const px = new Uint8Array([0, 0, 0, 0]);
 
     function cb(point: Point, uv_point: Point) {
-       
         for (let i = 0; i < channels; ++i) {
             px[i] = origin_imgdata.data[uv_point.y * width * channels + uv_point.x * channels + i];
         }
-        if(is_out_range(point.x,point.y,0,width,0,height)){
-            px[0] = 0
-            px[1] = 0
-            px[2] = 0
-            px[3] = 0
+        if (is_out_range(point.x, point.y, 0, width, 0, height)) {
+            px[0] = 0;
+            px[1] = 0;
+            px[2] = 0;
+            px[3] = 0;
         }
         for (let i = 0; i < channels; ++i) {
             target_imagedata.data[point.y * width * channels + point.x * channels + i] = px[i];
         }
     }
     mesh.render(cb);
-    // ctx.clearRect(0, 0, width, height);
-    // ctx.putImageData(target_imagedata, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+    ctx.putImageData(target_imagedata, 0, 0);
 
     const points = pointHandler(bezier_points, false);
 
@@ -482,17 +489,17 @@ async function fn(image: string, width: number, height: number, bezier_points: A
         url_ctx.moveTo(item[0].x, item[0].y);
         url_ctx.bezierCurveTo(item[1].x, item[1].y, item[2].x, item[2].y, item[3].x, item[3].y);
     });
-    // url_ctx.strokeStyle = 'red'
+    // url_ctx.strokeStyle = "red";
     // url_ctx.closePath();
-    // url_ctx.clip()
+    // url_ctx.clip();
     // url_ctx.stroke();
     url_ctx.drawImage(canvas, 0, 0);
     return url_canvas.toDataURL();
 }
 
-console.time('1')
-const url = await fn(img_url, 1048, 1200, bezier_points,100);
-console.timeEnd('1')
+console.time("1");
+const url = await fn(img_url, 1048, 1200, bezier_points, 5);
+console.timeEnd("1");
 const img = new Image();
 img.src = url;
 document.body.append(img);
