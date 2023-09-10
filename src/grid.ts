@@ -21,6 +21,7 @@ import {
     radialBasisFunctionInterpolation,
     length_points,
     inverseDistanceWeighting,
+    cross_point,
 } from "./utils";
 
 class Mesh {
@@ -85,21 +86,26 @@ class Mesh {
         }
         console.log(x_n, y_n);
         console.log(top_border.point);
+        const start = grid_points[0][0];
+        console.log(start);
         for (let y = 1; y < y_n - 1; ++y) {
             for (let x = 1; x < x_n - 1; ++x) {
                 // grid_points[y][x].x = interpolation_number(x/(x_n-1),top_border.point[y].x,bottom_border.point[y].x)
                 // grid_points[y][x].y = interpolation_number(y/(y_n-1),left_border.point[x].y,right_border.point[x].y)
 
-                const x_length = length_points(left_border.point[y], right_border.point[y]);
-                const y_length = length_points(top_border.point[x], bottom_border.point[x]);
-                let p;
-                if (x_length > y_length) {
-                    p = interpolation(y / (y_n - 1), top_border.point[x], bottom_border.point[x]);
-                } else {
-                    p = interpolation(x / (x_n - 1), left_border.point[y], right_border.point[y]);
-                }
-                grid_points[y][x] = p;
+                // const x_length = length_points(left_border.point[y], right_border.point[y]);
+                // const y_length = length_points(top_border.point[x], bottom_border.point[x]);
+                // let p;
+                // if (x_length > y_length) {
+                // } else {
+                // }
+                const p1 = interpolation(y / (y_n - 1), top_border.point[x], bottom_border.point[x]);
+                const p2 = interpolation(x / (x_n - 1), left_border.point[y], right_border.point[y]);
 
+                const p = cross_point(new Line(top_border.point[x], p2), new Line(left_border.point[y], p1));
+
+                grid_points[y][x] = p;
+                continue;
                 // const rx = x / (x_n - 1)
                 // const ry = y / (y_n - 1)
                 // const p = double_itnerpllation_point(rx,ry,top_border.point[x],right_border.point[y],bottom_border.point[x],left_border.point[y])
@@ -498,7 +504,7 @@ async function fn(
 }
 
 console.time("1");
-const url = await fn(img_url, 1048, 1200, bezier_points, 5);
+const url = await fn(img_url, 1048, 1200, b2, 2);
 console.timeEnd("1");
 const img = new Image();
 img.src = url;

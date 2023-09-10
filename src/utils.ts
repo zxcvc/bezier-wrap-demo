@@ -42,66 +42,69 @@ function interpolation(rate: number, start: Point, end: Point): Point {
     // rate = Math.max(0,rate)
     const x = Math.round((1 - rate) * start.x + rate * end.x);
     const y = Math.round((1 - rate) * start.y + rate * end.y);
-    
+
     return { x, y };
 }
 function interpolation_number(rate: number, start: number, end: number): number {
     return (1 - rate) * start + rate * end;
 }
 
-function double_itnerpllation_point(rx:number,ry:number,A:Point,B:Point,C:Point,D:Point):Point{
-    const res_rx = 1 - rx
-    const res_ry = 1 - ry
-    const x = res_rx * res_ry * A.x + rx * res_ry * B.x + rx * ry * C.x + res_rx * ry * D.x
-    const y = res_rx * res_ry * A.y + rx * res_ry * B.y + rx * ry * C.y + res_rx * ry * D.y
+function double_itnerpllation_point(rx: number, ry: number, A: Point, B: Point, C: Point, D: Point): Point {
+    const res_rx = 1 - rx;
+    const res_ry = 1 - ry;
+    const x = res_rx * res_ry * A.x + rx * res_ry * B.x + rx * ry * C.x + res_rx * ry * D.x;
+    const y = res_rx * res_ry * A.y + rx * res_ry * B.y + rx * ry * C.y + res_rx * ry * D.y;
 
     return {
-        x:Math.round(x),
-        y:Math.round(y)
-    }
+        x: Math.round(x),
+        y: Math.round(y),
+    };
 }
 
 // 定义高斯函数作为径向基函数
 function gaussian(r: number): number {
     const sigma = 1; // 高斯函数的标准差
     return Math.exp(-(r ** 2) / (2 * sigma ** 2));
-  }
-  function linear(r: number): number {
+}
+function linear(r: number): number {
     return Math.max(0, 1 - r);
-  }
-  function thinPlateSpline(r: number): number {
+}
+function thinPlateSpline(r: number): number {
     return r === 0 ? 0 : r ** 2 * Math.log(r);
-  }
-  function multiquadricWithTension(r: number, tension: number = 0.1): number {
+}
+function multiquadricWithTension(r: number, tension: number = 0.1): number {
     return Math.sqrt(1 + (tension * r) ** 2);
-  }
-  function polynomial(r: number, degree: number = 0): number {
+}
+function polynomial(r: number, degree: number = 0): number {
     return Math.pow(r, degree);
-  }
-  function morletWavelet(r: number): number {
+}
+function morletWavelet(r: number): number {
     return Math.cos(r) * Math.exp(-(r ** 2) / 2);
-  }
-  function shepard(r: number, power: number = 1): number {
+}
+function shepard(r: number, power: number = 1): number {
     return 1 / Math.pow(r, power);
-  }
-  // 定义径向基函数插值函数
-  function radialBasisFunctionInterpolation(
+}
+// 定义径向基函数插值函数
+function radialBasisFunctionInterpolation(
     targetPoint: { x: number; y: number },
-    knownPoints: { x: number; y: number; value: number }[],
-  ): number {
+    knownPoints: { x: number; y: number; value: number }[]
+): number {
     // 计算目标点与已知点之间的距离
-    const distances = knownPoints.map(point => Math.sqrt((point.x - targetPoint.x) ** 2 + (point.y - targetPoint.y) ** 2));
-  
+    const distances = knownPoints.map((point) =>
+        Math.sqrt((point.x - targetPoint.x) ** 2 + (point.y - targetPoint.y) ** 2)
+    );
+
     // 计算权重
-    const weights = distances.map(distance => shepard(distance));
-  
+    const weights = distances.map((distance) => shepard(distance));
+
     // 计算插值结果
-    const interpolatedValue = weights.reduce((sum, weight, index) => {
-      return sum + weight * knownPoints[index].value;
-    }, 0) / weights.reduce((sum, weight) => sum + weight, 0);
-  
+    const interpolatedValue =
+        weights.reduce((sum, weight, index) => {
+            return sum + weight * knownPoints[index].value;
+        }, 0) / weights.reduce((sum, weight) => sum + weight, 0);
+
     return interpolatedValue;
-  }
+}
 // function interpllation_line(rate:number,start:Line,end:Line):Line{
 // }
 
@@ -180,7 +183,6 @@ function gs_length(bezier: Bezier, t: number) {
     );
 }
 
-
 function getLUTByLen(bezier: Bezier, n: number): Array<Point> {
     const ans = new Array(n);
     const length = gs_length(bezier, 1);
@@ -191,16 +193,16 @@ function getLUTByLen(bezier: Bezier, n: number): Array<Point> {
         const t = binary_search(generator, len, 0, 1, ERROR_MARGIN);
         ans[i] = bezier.compute(t);
     }
-    console.log()
+    console.log();
     return ans;
 }
 
-function get_point_by_length_rate(t:number,bezier:Bezier):Point{
-    const length = bezier.length()
-    const len = length * t
+function get_point_by_length_rate(t: number, bezier: Bezier): Point {
+    const length = bezier.length();
+    const len = length * t;
     const generator = gs_length.bind(null, bezier);
-    const _t = binary_search(generator,len,0,1,ERROR_MARGIN)
-    return bezier.compute(_t)
+    const _t = binary_search(generator, len, 0, 1, ERROR_MARGIN);
+    return bezier.compute(_t);
 }
 
 class Line {
@@ -226,14 +228,35 @@ function get_cross_point(line_a: Line, line_b: Line): Point {
     return { x: Math.round(x), y: Math.round(y) };
 }
 
+function cross_point(A: Line, B: Line): Point {
+    const x1 = A.start.x;
+    const y1 = A.start.y;
+    const x2 = A.end.x;
+    const y2 = A.end.y;
 
-  
-  function inverseDistanceWeighting(points: Point[],target_points:Point[], target: Point, power: number): Point {
+    const x3 = B.start.x;
+    const y3 = B.start.y;
+    const x4 = B.end.x;
+    const y4 = B.end.y;
+
+    const m1 = (y2 - y1) / (x2 - x1);
+    const m2 = (y4 - y3) / (x4 - x3);
+
+    const b1 = y1 - m1 * x1;
+    const b2 = y3 - m2 * x3;
+
+    const x = (b2 - b1) / (m1 - m2);
+    const y = m1 * x + b1;
+
+    return { x, y };
+}
+
+function inverseDistanceWeighting(points: Point[], target_points: Point[], target: Point, power: number): Point {
     let weightSum = 0;
-    let x = 0
-    let y = 0
+    let x = 0;
+    let y = 0;
     for (let i = 0; i < points.length; ++i) {
-        const point = points[i]
+        const point = points[i];
         const distance = Math.sqrt((point.x - target.x) ** 2 + (point.y - target.y) ** 2);
         const weight = Math.pow(1 / distance, power);
         x += weight * target_points[i].x;
@@ -242,12 +265,10 @@ function get_cross_point(line_a: Line, line_b: Line): Point {
     }
 
     return {
-        x:x / weightSum,
-        y:y / weightSum
-    }
-  }
-  
-
+        x: x / weightSum,
+        y: y / weightSum,
+    };
+}
 
 export {
     inverseDistanceWeighting,
@@ -265,8 +286,9 @@ export {
     interpolation_number,
     length_points,
     get_cross_point,
+    cross_point,
     Line,
     double_itnerpllation_point,
     radialBasisFunctionInterpolation,
-    get_point_by_length_rate
+    get_point_by_length_rate,
 };
