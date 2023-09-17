@@ -1,70 +1,57 @@
-if (typeof (window as any).global === "undefined") {
-    (window as any).global = window;
+if (typeof window.global === "undefined") {
+    window.global = window;
 }
-
-const drawline = true
-import { matrix, det, row } from "mathjs";
-import Delaunator from "delaunator";
+const drawline = false;
 import p2t from "poly2tri";
-
-import { Bezier, type Point } from "bezier-js";
-import {
-    pointHandler,
-    getLUTByLen,
-    interpolation,
-    interpolation_number,
-    createBezier,
-    LoadImageBySize,
-    loadImage,
-    get_cross_point,
-    Line,
-    is_out_range,
-    double_itnerpllation_point,
-    radialBasisFunctionInterpolation,
-    length_points,
-    inverseDistanceWeighting,
-    cross_point,
-} from "./utils";
-
+import { Bezier } from "bezier-js";
+import { pointHandler, getLUTByLen, interpolation, LoadImageBySize, loadImage, Line, is_out_range, inverseDistanceWeighting, cross_point, } from "./utils";
 class Mesh {
-    ctx: CanvasRenderingContext2D;
-    borders: Array<Border> = [];
-    grids: Array<VertexGrid> = [];
-    triangles: Array<VectexTriangle> = [];
-    constructor(
-        ctx: CanvasRenderingContext2D,
-        borders: Array<Border>,
-        n: number,
-        uv_width: number,
-        uv_height: number,
-        factor: number
-    ) {
+    constructor(ctx, borders, n, uv_width, uv_height, factor) {
+        Object.defineProperty(this, "ctx", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "borders", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
+        Object.defineProperty(this, "grids", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
+        Object.defineProperty(this, "triangles", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
         this.ctx = ctx;
         this.borders = borders;
         this.cteate_grid(this.borders, uv_width, uv_height);
         // this.crate_triangle(this.borders, uv_width, uv_height, factor);
     }
-
-    cteate_grid(borders: Array<Border>, uv_width: number, uv_height: number) {
-        const grids: Array<VertexGrid> = [];
+    cteate_grid(borders, uv_width, uv_height) {
+        const grids = [];
         const top_border = borders[0];
         const right_border = borders[1];
         const bottom_border = borders[2];
         const left_border = borders[3];
-
         const x_n = top_border.point.length;
         const y_n = right_border.point.length;
-
         // let max_border1 = top_border;
         // let max_border2 = bottom_border;
         // let min_border1 = left_border;
         // let min_border2 = right_border;
-
         // if (y_n > x_n) {
         //     [max_border1, min_border1] = [min_border1, max_border1];
         //     [max_border2, min_border2] = [min_border2, max_border2];
         // }
-
         const grid_points = new Array(y_n);
         for (let i = 0; i < y_n; ++i) {
             const rows = new Array(x_n);
@@ -85,72 +72,49 @@ class Mesh {
         for (let i = 0; i < y_n; ++i) {
             grid_points[i][0] = left_border.point[i];
         }
-        const start = grid_points[0][0]
-        for (let y = 1; y < y_n-1 ; ++y) {
-            for (let x = 1; x < x_n-1 ; ++x) {
+        for (let y = 1; y < y_n - 1; ++y) {
+            for (let x = 1; x < x_n - 1; ++x) {
                 // grid_points[y][x].x = interpolation_number(x/(x_n-1),top_border.point[y].x,bottom_border.point[y].x)
                 // grid_points[y][x].y = interpolation_number(y/(y_n-1),left_border.point[x].y,right_border.point[x].y)
-
                 // const x_length = length_points(left_border.point[y], right_border.point[y]);
                 // const y_length = length_points(top_border.point[x], bottom_border.point[x]);
                 // let p;
                 // if (x_length > y_length) {
                 // } else {
                 // }
-    
-                const p1 = interpolation(y / (y_n-1), top_border.point[x], bottom_border.point[x]);
-                const p2 = interpolation(x / (x_n-1), left_border.point[y], right_border.point[y]);
-
-                const x_vec = [p1.x-left_border.point[y].x,p1.x-left_border.point[y].y] 
-                const y_vec = [p2.x-top_border.point[x].x,p2.y-top_border.point[x].y]
-                const p = {
-                    x:x_vec[0]+y_vec[0]+start.x,
-                    y:x_vec[1]+y_vec[1]+start.y,
-
-                }
-                // const p = cross_point(new Line(top_border.point[x], p2), new Line(left_border.point[y], p1));
+                const p1 = interpolation(y / (y_n - 1), top_border.point[x], bottom_border.point[x]);
+                const p2 = interpolation(x / (x_n - 1), left_border.point[y], right_border.point[y]);
+                const p = cross_point(new Line(top_border.point[x], p2), new Line(left_border.point[y], p1));
                 // const p = cross_point(new Line(top_border.point[x], bottom_border.point[x]), new Line(left_border.point[y], right_border.point[y]));
-                // const p = cross_point(new Line(top_border.point[x], p2), new Line(left_border.point[y], p1));
-                console.log(p)
+                console.log(p);
                 grid_points[y][x] = p;
                 continue;
                 // const rx = x / (x_n - 1)
                 // const ry = y / (y_n - 1)
                 // const p = double_itnerpllation_point(rx,ry,top_border.point[x],right_border.point[y],bottom_border.point[x],left_border.point[y])
-                const point = inverseDistanceWeighting(
-                    [
-                        { x: x, y: 0 },
-                        { x: x_n - 1, y: y },
-                        { x: x, y: y_n - 1 },
-                        { x: 0, y: y },
-                    ],
-                    [top_border.point[x], right_border.point[y], bottom_border.point[x], left_border.point[y]],
-                    { x: x, y: y },
-                    1
-                );
+                const point = inverseDistanceWeighting([
+                    { x: x, y: 0 },
+                    { x: x_n - 1, y: y },
+                    { x: x, y: y_n - 1 },
+                    { x: 0, y: y },
+                ], [top_border.point[x], right_border.point[y], bottom_border.point[x], left_border.point[y]], { x: x, y: y }, 1);
                 grid_points[y][x] = point;
             }
         }
-
         for (let y = 0; y < y_n - 1; ++y) {
             for (let x = 0; x < x_n - 1; ++x) {
                 let a = grid_points[y][x];
                 let b = grid_points[y][x + 1];
                 let c = grid_points[y + 1][x + 1];
                 let d = grid_points[y + 1][x];
-
                 a.x = Math.round(a.x);
                 a.y = Math.round(a.y);
-
                 b.x = Math.round(b.x);
                 b.y = Math.round(b.y);
-
                 c.x = Math.round(c.x);
                 c.y = Math.round(c.y);
-
                 d.x = Math.round(d.x);
                 d.y = Math.round(d.y);
-
                 const uv_step_x = uv_width / (x_n - 1);
                 const uv_step_y = uv_height / (y_n - 1);
                 const uv_a = { x: Math.round(x * uv_step_x), y: Math.round(y * uv_step_y) };
@@ -158,17 +122,15 @@ class Mesh {
                 const uv_c = { x: Math.round((x + 1) * uv_step_x), y: Math.round((y + 1) * uv_step_y) };
                 const uv_d = { x: Math.round(x * uv_step_x), y: Math.round((y + 1) * uv_step_y) };
                 const uv_grid = new UVGrid(uv_a, uv_b, uv_c, uv_d);
-
                 const grid = new VertexGrid(a, b, c, d, uv_grid);
                 grids.push(grid);
             }
         }
         this.grids = grids;
     }
-    crate_triangle(borders: Array<Border>, width: number, height: number, factor: number) {
+    crate_triangle(borders, width, height, factor) {
         const x_n = Math.max(5, Math.round(width / factor));
         const y_n = Math.max(5, Math.round(height / factor));
-
         const [top_border, right_border, bottom_border, left_border] = borders;
         const a = top_border.point.flatMap((item) => new p2t.Point(item.x, item.y));
         const b = right_border.point.flatMap((item) => new p2t.Point(item.x, item.y));
@@ -178,14 +140,12 @@ class Mesh {
         b.pop();
         c.pop();
         d.pop();
-
         const tt = [];
         const bb = [];
         const ll = [];
         const rr = [];
         const x_step = width / x_n;
         const y_step = height / y_n;
-
         for (let i = 0; i <= y_n; ++i) {
             rr[i] = new p2t.Point(width, y_step * i);
             ll[i] = new p2t.Point(0, y_step * i);
@@ -200,17 +160,14 @@ class Mesh {
         rr.pop();
         bb.pop();
         ll.pop();
-
-        const _coords = ([] as poly2tri.Point[]).concat(tt).concat(rr).concat(bb).concat(ll);
+        const _coords = [].concat(tt).concat(rr).concat(bb).concat(ll);
         const _swctx = new p2t.SweepContext(_coords);
         _swctx.triangulate();
         const _triangles = _swctx.getTriangles();
-
-        const coords = ([] as poly2tri.Point[]).concat(a).concat(b).concat(c).concat(d);
+        const coords = [].concat(a).concat(b).concat(c).concat(d);
         const swctx = new p2t.SweepContext(coords);
         swctx.triangulate();
         const triangles = swctx.getTriangles();
-
         for (let i = 0; i < triangles.length; ++i) {
             const triangle = triangles[i];
             const _triangle = _triangles[i];
@@ -224,130 +181,125 @@ class Mesh {
                 item.y = Math.round(item.y);
                 return item;
             });
-            this.triangles.push(
-                new VectexTriangle(
-                    points[0],
-                    points[1],
-                    points[2],
-                    new UVTriangle(_pointes[0], _pointes[1], _pointes[2]),
-                    triangle_render
-                )
-            );
+            this.triangles.push(new VectexTriangle(points[0], points[1], points[2], new UVTriangle(_pointes[0], _pointes[1], _pointes[2]), triangle_render));
         }
     }
-    render(cb: (point: Point, uv_point: Point) => void) {
+    render(cb) {
         for (let item of this.grids) {
             item.render(this.ctx, cb);
         }
     }
 }
-
-class Grid<T> {
-    a: T;
-    b: T;
-    c: T;
-    d: T;
-    constructor(a: T, b: T, c: T, d: T) {
+class Grid {
+    constructor(a, b, c, d) {
+        Object.defineProperty(this, "a", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "b", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "c", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "d", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.a = a;
         this.b = b;
         this.c = c;
         this.d = d;
     }
 }
-
-class VertexGrid extends Grid<Point> {
-    /*四个点 顺时针方向*/
-    uv_grid: UVGrid;
-    constructor(a: Point, b: Point, c: Point, d: Point, uv_grid: UVGrid) {
+class VertexGrid extends Grid {
+    constructor(a, b, c, d, uv_grid) {
         super(a, b, c, d);
+        /*四个点 顺时针方向*/
+        Object.defineProperty(this, "uv_grid", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.uv_grid = uv_grid;
     }
-    render(ctx: CanvasRenderingContext2D, cb: (point: Point, uv_point: Point) => void) {
-        const triangleA = new VectexTriangle(
-            this.c,
-            this.a,
-            this.b,
-            new UVTriangle(this.uv_grid.c, this.uv_grid.a, this.uv_grid.b),
-            triangle_render
-        );
-        const triangleB = new VectexTriangle(
-            this.d,
-            this.a,
-            this.c,
-            new UVTriangle(this.uv_grid.d, this.uv_grid.a, this.uv_grid.c),
-            triangle_render
-        );
+    render(ctx, cb) {
+        const triangleA = new VectexTriangle(this.c, this.a, this.b, new UVTriangle(this.uv_grid.c, this.uv_grid.a, this.uv_grid.b), triangle_render);
+        const triangleB = new VectexTriangle(this.d, this.a, this.c, new UVTriangle(this.uv_grid.d, this.uv_grid.a, this.uv_grid.c), triangle_render);
         triangleA.render(ctx, cb);
         triangleB.render(ctx, cb);
     }
 }
-
-class UVGrid extends Grid<Point> {
-    constructor(a: Point, b: Point, c: Point, d: Point) {
+class UVGrid extends Grid {
+    constructor(a, b, c, d) {
         super(a, b, c, d);
     }
 }
-
-abstract class Triangle<T> {
-    a: T;
-    b: T;
-    c: T;
-    constructor(a: T, b: T, c: T) {
+class Triangle {
+    constructor(a, b, c) {
+        Object.defineProperty(this, "a", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "b", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "c", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.a = a;
         this.b = b;
         this.c = c;
     }
 }
-
-class UVTriangle extends Triangle<Point> {
-    constructor(a: Point, b: Point, c: Point) {
+class UVTriangle extends Triangle {
+    constructor(a, b, c) {
         super(a, b, c);
     }
 }
-
-class VectexTriangle extends Triangle<Point> {
-    uv: UVTriangle;
-    render_fn: (
-        ctx: CanvasRenderingContext2D,
-        a: Point,
-        b: Point,
-        c: Point,
-        uv: UVTriangle,
-        cb: (point: Point, uv_point: Point) => void
-    ) => void;
-    constructor(
-        a: Point,
-        b: Point,
-        c: Point,
-        uv: UVTriangle,
-        render_fn: (
-            ctx: CanvasRenderingContext2D,
-            a: Point,
-            b: Point,
-            c: Point,
-            uv: UVTriangle,
-            cb: (point: Point, uv_point: Point) => void
-        ) => void
-    ) {
+class VectexTriangle extends Triangle {
+    constructor(a, b, c, uv, render_fn) {
         super(a, b, c);
+        Object.defineProperty(this, "uv", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "render_fn", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.uv = uv;
         this.render_fn = render_fn;
     }
-
-    render(ctx: CanvasRenderingContext2D, cb: (point: Point, uv_point: Point) => void) {
+    render(ctx, cb) {
         this.render_fn(ctx, this.a, this.b, this.c, this.uv, cb);
     }
 }
-
-function triangle_render(
-    ctx: CanvasRenderingContext2D,
-    a: Point,
-    b: Point,
-    c: Point,
-    uv: UVTriangle,
-    cb: (point: Point, uv_point: Point) => void
-) {
-    if(drawline){
+function triangle_render(ctx, a, b, c, uv, cb) {
+    if (drawline) {
         ctx.strokeStyle = "black";
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
@@ -357,20 +309,16 @@ function triangle_render(
         ctx.stroke();
         return;
     }
-        
-        let min_x = Math.min(a.x, b.x, c.x);
+    let min_x = Math.min(a.x, b.x, c.x);
     let max_x = Math.max(a.x, b.x, c.x);
     let min_y = Math.min(a.y, b.y, c.y);
     let max_y = Math.max(a.y, b.y, c.y);
     // console.log(max_x-min_x,max_y-min_y)
-
     for (let y = min_y; y <= max_y; ++y) {
         for (let x = min_x; x < max_x; ++x) {
-            const alpha =
-                ((a.y - b.y) * x + (b.x - a.x) * y + a.x * b.y - b.x * a.y) /
+            const alpha = ((a.y - b.y) * x + (b.x - a.x) * y + a.x * b.y - b.x * a.y) /
                 ((a.y - b.y) * c.x + (b.x - a.x) * c.y + a.x * b.y - b.x * a.y);
-            const bate =
-                ((a.y - c.y) * x + (c.x - a.x) * y + a.x * c.y - c.x * a.y) /
+            const bate = ((a.y - c.y) * x + (c.x - a.x) * y + a.x * c.y - c.x * a.y) /
                 ((a.y - c.y) * b.x + (c.x - a.x) * b.y + a.x * c.y - c.x * a.y);
             const gamma = 1 - alpha - bate;
             if (alpha >= 0 && bate >= 0 && gamma >= 0) {
@@ -383,11 +331,9 @@ function triangle_render(
         }
     }
 }
-
 const width = 1048;
 const height = 1200;
 const img_url = "/7.jpg";
-
 const bezier_points = [
     { x: 446.0, y: -47.0 },
     { x: 674.3, y: 60.0 },
@@ -402,7 +348,6 @@ const bezier_points = [
     { x: 150.5, y: 603.4 },
     { x: 300.5, y: 274.0 },
 ];
-
 const b1 = [
     { x: 269.0, y: -1.3 },
     { x: 206.7, y: 1.3 },
@@ -417,7 +362,6 @@ const b1 = [
     { x: 347.0, y: 647.9 },
     { x: 289.5, y: 304.5 },
 ];
-
 const b2 = [
     { x: 0.5, y: -0.5 },
     { x: 146.4, y: 69.1 },
@@ -432,52 +376,57 @@ const b2 = [
     { x: 5.3, y: 23.6 },
     { x: 3.2, y: 11.8 },
 ];
-
 class Border {
-    bezier: Bezier;
-    origin_point: Array<Point>;
-    point: Array<Point>;
-    constructor(points: Array<Point>, n: number) {
+    constructor(points, n) {
+        Object.defineProperty(this, "bezier", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "origin_point", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "point", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this.origin_point = points;
         const bezier = new Bezier(points);
         this.bezier = bezier;
         this.point = getLUTByLen(bezier, n);
     }
 }
-async function fn(
-    image: string,
-    width: number,
-    height: number,
-    bezier_points: Array<Point>,
-    factor = 2
-): Promise<string> {
+async function fn(image, width, height, bezier_points, factor = 2) {
     const img = await LoadImageBySize(image, width, height);
     const img_el = await loadImage(img);
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
-    const ctx = canvas.getContext("2d")!;
-    if(!drawline){
+    const ctx = canvas.getContext("2d");
+    if (!drawline) {
         ctx.drawImage(img_el, 0, 0, width, height);
     }
     const origin_imgdata = ctx.getImageData(0, 0, width, height);
     const target_imagedata = ctx.createImageData(width, height);
     const channels = origin_imgdata.data.length / (origin_imgdata.width * origin_imgdata.height);
-
     const n = Math.round(Math.max(width, height) / 2);
     const x_n = Math.max(5, Math.round(width / factor));
     const y_n = Math.max(5, Math.round(height / factor));
     const [top, right, bottom, left] = pointHandler(bezier_points, true);
-
-    const top_border = new Border(top, x_n-1);
-    const right_border = new Border(right, y_n-1);
-    const bottom_border = new Border(bottom, x_n-1);
-    const left_border = new Border(left, y_n-1);
-    console.log(top_border,x_n)
+    const top_border = new Border(top, x_n - 1);
+    const right_border = new Border(right, y_n - 1);
+    const bottom_border = new Border(bottom, x_n - 1);
+    const left_border = new Border(left, y_n - 1);
+    console.log(top_border, x_n);
     const mesh = new Mesh(ctx, [top_border, right_border, bottom_border, left_border], n, width, height, factor);
     const px = new Uint8Array([0, 0, 0, 0]);
-
-    function cb(point: Point, uv_point: Point) {
+    function cb(point, uv_point) {
         for (let i = 0; i < channels; ++i) {
             px[i] = origin_imgdata.data[uv_point.y * width * channels + uv_point.x * channels + i];
         }
@@ -491,19 +440,16 @@ async function fn(
             target_imagedata.data[point.y * width * channels + point.x * channels + i] = px[i];
         }
     }
-
     mesh.render(cb);
-    if(!drawline){
+    if (!drawline) {
         ctx.clearRect(0, 0, width, height);
         ctx.putImageData(target_imagedata, 0, 0);
     }
-
     const points = pointHandler(bezier_points, false);
-
     const url_canvas = document.createElement("canvas");
     url_canvas.width = width;
     url_canvas.height = height;
-    const url_ctx = url_canvas.getContext("2d")!;
+    const url_ctx = url_canvas.getContext("2d");
     url_ctx.beginPath();
     points.forEach((item) => {
         url_ctx.moveTo(item[0].x, item[0].y);
@@ -514,12 +460,10 @@ async function fn(
     url_ctx.drawImage(canvas, 0, 0);
     return url_canvas.toDataURL();
 }
-
-console.time("1");
-const url = await fn(img_url, 1048, 1200, bezier_points, 10);
-console.timeEnd("1");
-const img = new Image();
-img.src = url;
-document.body.append(img);
-
+// console.time("1");
+// const url = await fn(img_url, 1048, 1200, bezier_points, 33);
+// console.timeEnd("1");
+// const img = new Image();
+// img.src = url;
+// document.body.append(img);
 export { Mesh, fn };
