@@ -2,7 +2,7 @@ if (typeof (window as any).global === "undefined") {
     (window as any).global = window;
 }
 
-const drawline = true
+const drawline = true;
 import { matrix, det, row } from "mathjs";
 import Delaunator from "delaunator";
 import p2t from "poly2tri";
@@ -73,7 +73,7 @@ class Mesh {
             }
             grid_points[i] = rows;
         }
-        for (let i = 0; i <= x_n; ++i) {
+        for (let i = 0; i < x_n; ++i) {
             grid_points[0][i] = top_border.point[i];
         }
         for (let i = 0; i < y_n; ++i) {
@@ -85,9 +85,13 @@ class Mesh {
         for (let i = 0; i < y_n; ++i) {
             grid_points[i][0] = left_border.point[i];
         }
-        const start = grid_points[0][0]
-        for (let y = 1; y < y_n-1 ; ++y) {
-            for (let x = 1; x < x_n-1 ; ++x) {
+        const start = grid_points[0][0];
+        console.log(top_border.point[0]);
+        console.log(bottom_border.point[0]);
+        console.log(left_border.point[0]);
+        console.log(right_border.point[0]);
+        for (let y = 1; y < y_n - 1; ++y) {
+            for (let x = 1; x < x_n - 1; ++x) {
                 // grid_points[y][x].x = interpolation_number(x/(x_n-1),top_border.point[y].x,bottom_border.point[y].x)
                 // grid_points[y][x].y = interpolation_number(y/(y_n-1),left_border.point[x].y,right_border.point[x].y)
 
@@ -97,38 +101,21 @@ class Mesh {
                 // if (x_length > y_length) {
                 // } else {
                 // }
-    
-                const p1 = interpolation(y / (y_n-1), top_border.point[x], bottom_border.point[x]);
-                const p2 = interpolation(x / (x_n-1), left_border.point[y], right_border.point[y]);
 
-                const x_vec = [p1.x-left_border.point[y].x,p1.x-left_border.point[y].y] 
-                const y_vec = [p2.x-top_border.point[x].x,p2.y-top_border.point[x].y]
+                const p1 = interpolation(y / (y_n - 1), top_border.point[x], bottom_border.point[x]);
+                const p2 = interpolation(x / (x_n - 1), left_border.point[y], right_border.point[y]);
+
+                const x_vec = [p1.x - grid_points[y][x - 1].x, p1.y - grid_points[y][x - 1].y];
+                const y_vec = [p2.x - grid_points[y - 1][x].x, p2.y - grid_points[y - 1][x].y];
                 const p = {
-                    x:x_vec[0]+y_vec[0]+start.x,
-                    y:x_vec[1]+y_vec[1]+start.y,
-
-                }
+                    x: Math.round(x_vec[0] + y_vec[0] + grid_points[y - 1][x - 1].x),
+                    y: Math.round(x_vec[1] + y_vec[1] + grid_points[y - 1][x - 1].y),
+                };
                 // const p = cross_point(new Line(top_border.point[x], p2), new Line(left_border.point[y], p1));
                 // const p = cross_point(new Line(top_border.point[x], bottom_border.point[x]), new Line(left_border.point[y], right_border.point[y]));
                 // const p = cross_point(new Line(top_border.point[x], p2), new Line(left_border.point[y], p1));
-                console.log(p)
                 grid_points[y][x] = p;
-                continue;
-                // const rx = x / (x_n - 1)
-                // const ry = y / (y_n - 1)
-                // const p = double_itnerpllation_point(rx,ry,top_border.point[x],right_border.point[y],bottom_border.point[x],left_border.point[y])
-                const point = inverseDistanceWeighting(
-                    [
-                        { x: x, y: 0 },
-                        { x: x_n - 1, y: y },
-                        { x: x, y: y_n - 1 },
-                        { x: 0, y: y },
-                    ],
-                    [top_border.point[x], right_border.point[y], bottom_border.point[x], left_border.point[y]],
-                    { x: x, y: y },
-                    1
-                );
-                grid_points[y][x] = point;
+                console.log(p, x_vec, y_vec);
             }
         }
 
@@ -347,7 +334,7 @@ function triangle_render(
     uv: UVTriangle,
     cb: (point: Point, uv_point: Point) => void
 ) {
-    if(drawline){
+    if (drawline) {
         ctx.strokeStyle = "black";
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
@@ -357,8 +344,8 @@ function triangle_render(
         ctx.stroke();
         return;
     }
-        
-        let min_x = Math.min(a.x, b.x, c.x);
+
+    let min_x = Math.min(a.x, b.x, c.x);
     let max_x = Math.max(a.x, b.x, c.x);
     let min_y = Math.min(a.y, b.y, c.y);
     let max_y = Math.max(a.y, b.y, c.y);
@@ -457,7 +444,7 @@ async function fn(
     canvas.width = width;
     canvas.height = height;
     const ctx = canvas.getContext("2d")!;
-    if(!drawline){
+    if (!drawline) {
         ctx.drawImage(img_el, 0, 0, width, height);
     }
     const origin_imgdata = ctx.getImageData(0, 0, width, height);
@@ -469,11 +456,11 @@ async function fn(
     const y_n = Math.max(5, Math.round(height / factor));
     const [top, right, bottom, left] = pointHandler(bezier_points, true);
 
-    const top_border = new Border(top, x_n-1);
-    const right_border = new Border(right, y_n-1);
-    const bottom_border = new Border(bottom, x_n-1);
-    const left_border = new Border(left, y_n-1);
-    console.log(top_border,x_n)
+    const top_border = new Border(top, x_n - 1);
+    const right_border = new Border(right, y_n - 1);
+    const bottom_border = new Border(bottom, x_n - 1);
+    const left_border = new Border(left, y_n - 1);
+    console.log(top_border, x_n);
     const mesh = new Mesh(ctx, [top_border, right_border, bottom_border, left_border], n, width, height, factor);
     const px = new Uint8Array([0, 0, 0, 0]);
 
@@ -493,7 +480,7 @@ async function fn(
     }
 
     mesh.render(cb);
-    if(!drawline){
+    if (!drawline) {
         ctx.clearRect(0, 0, width, height);
         ctx.putImageData(target_imagedata, 0, 0);
     }
@@ -516,7 +503,7 @@ async function fn(
 }
 
 console.time("1");
-const url = await fn(img_url, 1048, 1200, bezier_points, 10);
+const url = await fn(img_url, 1048, 1200, bezier_points, 100);
 console.timeEnd("1");
 const img = new Image();
 img.src = url;
